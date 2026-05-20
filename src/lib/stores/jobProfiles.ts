@@ -17,7 +17,7 @@ function persist(profiles: JobProfile[]) {
 }
 
 function createJobProfilesStore() {
-  const { subscribe, update } = writable<JobProfile[]>(load());
+  const { subscribe, set, update } = writable<JobProfile[]>(load());
 
   return {
     subscribe,
@@ -50,6 +50,10 @@ function createJobProfilesStore() {
         persist(next);
         return next;
       });
+    },
+    reset() {
+      localStorage.removeItem(KEY);
+      set([]);
     },
   };
 }
