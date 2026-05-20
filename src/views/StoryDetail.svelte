@@ -23,6 +23,7 @@
   let showTagPicker = $state(false);
   let showDeleteConfirm = $state(false);
   let editingField = $state<string | null>(null);
+  let editingActionIdx = $state<number | null>(null);
 
   function save() {
     storiesStore.updateStory(storyId, {
@@ -60,8 +61,14 @@
 
   <!-- Title -->
   <input
-    class="input input-bordered w-full text-xl font-bold mb-4"
+    class="w-full text-xl font-bold mb-4 rounded transition-colors duration-100
+           {editingField === 'title'
+             ? 'input input-bordered'
+             : 'border-0 bg-transparent cursor-text hover:bg-base-200/60 p-1 outline-none'}"
     bind:value={title}
+    onfocus={() => editingField = 'title'}
+    onblur={() => { editingField = null; save(); }}
+    onkeydown={(e) => { if (e.key === 'Escape') (e.target as HTMLElement).blur(); }}
     data-testid="detail-title"
   />
 
@@ -131,19 +138,26 @@
   <div class="mb-4">
     <div class="flex items-center justify-between mb-2">
       <span class="label-text font-semibold">Action Steps {QUALITY_ICON[quality.action]}</span>
-      <button class="btn btn-xs btn-ghost" onclick={addAction}>+ Add step</button>
+      {#if editingActionIdx !== null}
+        <button class="btn btn-xs btn-ghost" onclick={addAction}>+ Add step</button>
+      {/if}
     </div>
     {#each actions as action, i}
-      <div class="flex gap-2 mb-2">
+      <div class="flex gap-2 mb-1.5 items-center">
         <input
-          class="input input-bordered input-sm flex-1"
+          class="flex-1 rounded transition-colors duration-100
+                 {editingActionIdx === i
+                   ? 'input input-bordered input-sm'
+                   : 'border-0 bg-transparent cursor-text hover:bg-base-200/60 p-1 text-sm outline-none'}"
           value={action}
           oninput={(e) => updateAction(i, (e.target as HTMLInputElement).value)}
-          onblur={save}
+          onfocus={() => editingActionIdx = i}
+          onblur={() => { editingActionIdx = null; save(); }}
+          onkeydown={(e) => { if (e.key === 'Escape') (e.target as HTMLElement).blur(); }}
           data-testid="detail-action-item"
         />
-        {#if actions.length > 1}
-          <button class="btn btn-xs btn-ghost text-error" onclick={() => { removeAction(i); save(); }}>✕</button>
+        {#if editingActionIdx === i && actions.length > 1}
+          <button class="btn btn-xs btn-ghost text-error" onmousedown={() => removeAction(i)} data-testid="remove-action-btn">✕</button>
         {/if}
       </div>
     {/each}
