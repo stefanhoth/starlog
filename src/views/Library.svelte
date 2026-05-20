@@ -75,6 +75,16 @@
     {/if}
   </div>
 
+  <!-- Quality legend -->
+  {#if $storiesStore.length > 0}
+    <p class="text-xs text-slate-400 mb-3">
+      AI quality:
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 mx-1 align-middle"></span>Strong&ensp;
+      <span class="inline-block w-2 h-2 rounded-full bg-amber-400 mx-1 align-middle"></span>Room to improve&ensp;
+      <span class="inline-block w-2 h-2 rounded-full bg-red-400 mx-1 align-middle"></span>Needs work
+    </p>
+  {/if}
+
   <!-- Card Grid -->
   {#if $storiesStore.length === 0}
     <div class="flex flex-col items-center justify-center gap-4 py-24 text-base-content/40" data-testid="empty-state">
