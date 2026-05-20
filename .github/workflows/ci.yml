@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
   # ── Quality gate: type check + build + audit ───────────────────────────────
   quality:
@@ -76,6 +72,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [quality]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: pages
+      cancel-in-progress: true
 
     permissions:
       pages: write
