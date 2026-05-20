@@ -1,0 +1,38 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["before 7am on Monday"],
+  "timezone": "Europe/Berlin",
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Automerge devDependency patch and minor updates — tooling only, no user-facing risk",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Group all Svelte ecosystem packages into one PR",
+      "matchPackageNames": ["svelte", "@sveltejs/**", "svelte-check"],
+      "groupName": "Svelte ecosystem"
+    },
+    {
+      "description": "Group all Vite / build tooling into one PR",
+      "matchPackageNames": ["vite", "@vitejs/**"],
+      "groupName": "Vite"
+    },
+    {
+      "description": "Group Tailwind + DaisyUI + PostCSS together — they often need coordinated updates",
+      "matchPackageNames": ["tailwindcss", "daisyui", "postcss", "autoprefixer"],
+      "groupName": "Tailwind + DaisyUI"
+    },
+    {
+      "description": "Gemini SDK — manual review, runtime dependency",
+      "matchPackageNames": ["@google/generative-ai"],
+      "automerge": false,
+      "labels": ["dependencies", "review-required"]
+    }
+  ]
+}

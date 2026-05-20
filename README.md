@@ -1,47 +1,125 @@
-# Svelte + TS + Vite
+# StarLog
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+[![CI](https://github.com/stefanhoth/starlog/actions/workflows/ci.yml/badge.svg)](https://github.com/stefanhoth/starlog/actions/workflows/ci.yml)
 
-## Recommended IDE Setup
+**Your browser-local STAR story library for job interviews.**
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+StarLog helps you capture, structure, and rehearse past-experience stories using the STAR format (Situation, Task, Action, Result). Speak or paste a rough description of what happened — Gemini AI turns it into a polished, interview-ready story. Map your stories to specific job postings, see coverage at a glance, and walk into any interview with the right story ready to go.
 
-## Need an official Svelte framework?
+Everything stays in your browser. No account, no server, no data leaving your machine — except the Gemini API calls made with your own key.
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+---
 
-## Technical considerations
+## Features
 
-**Why use this over SvelteKit?**
+- **Capture your way** — record audio directly in the browser, upload an existing file, or paste a transcript. Gemini extracts a structured STAR story from any of them.
+- **Library** — searchable, filterable card grid of all your stories. Tag by competency, rank by strength.
+- **Story editor** — edit any STAR field inline, manage action steps, add private notes.
+- **Job Profiles** — paste a job description and Gemini extracts the 5–7 behavioural competencies the role is likely to interview on.
+- **Coverage matrix** — see which competencies you have stories for and which are gaps. Map any story to any competency in one click.
+- **Re-extract** — update a job description and reconcile stories that were mapped to competencies that no longer exist.
+- **Interview mode** — full-screen flashcard view. Browse all stories or drill by job profile / competency group. Keyboard-navigable (← → ↑ ↓ ESC). Two-line action crib visible by default; tap to expand the full STAR.
+- **Print cheat sheet** — one keystroke generates a clean print layout with one competency per page.
+- **API key validation** — live ping on the key you enter; Save is disabled until the key is confirmed working.
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+---
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+## Getting Started
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+### Prerequisites
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+- **Node.js 22+** — [nodejs.org](https://nodejs.org)
+- **Gemini API key** — free tier available at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+### Setup
 
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+```bash
+git clone https://github.com/stefanhoth/starlog.git
+cd starlog
+npm install
+npm run dev
 ```
+
+Open [http://localhost:5173](http://localhost:5173), enter your Gemini API key, and start capturing stories.
+
+---
+
+## Architecture
+
+| Layer | Choice | Why |
+|---|---|---|
+| UI framework | Svelte 5 (runes mode) | Fine-grained reactivity without a VDOM; native browser APIs fit naturally |
+| Styling | Tailwind CSS v3 + DaisyUI v4 | Utility-first layout, component tokens for consistent UI |
+| Build | Vite 6 | Near-instant HMR in development; fast production builds |
+| AI | Gemini 2.5 Flash (`@google/generative-ai`) | Multimodal (audio + text in one call); generous free tier |
+| Storage | `localStorage` (stories, profiles, settings) + `sessionStorage` (navigation state) | No backend needed; data never leaves the device |
+| Tests | Playwright (Chromium) | Real browser, real MediaRecorder, Gemini mocked via `page.route` |
+
+### Data model (simplified)
+
+```
+Story {
+  id, title, original_language
+  star: { situation, task, action: string[], result }
+  quality: { situation, task, action, result, notes }   ← AI-assessed per section
+  competency_tags, rank, notes
+}
+
+JobProfile {
+  id, company, role, jobDescription
+  extractedCompetencies: string[]
+  competencyMap: Record<competency, storyId[]>          ← same story usable across profiles
+}
+```
+
+---
+
+## Development
+
+```bash
+npm run dev          # dev server with HMR at localhost:5173
+npm run check        # svelte-check + tsc (type errors)
+npm run build        # production build to dist/
+npx playwright test  # full e2e suite (55 tests, Chromium)
+npx playwright test tests/onboarding.spec.ts  # single file
+```
+
+Test fixtures live in `tests/fixtures/`. Gemini responses are mocked — no real API key needed to run the suite.
+
+### Project structure
+
+```
+src/
+  lib/
+    components/     # StoryCard, StoryPicker, JobProfileCard
+    stores/         # stories, jobProfiles, settings, view (localStorage-backed)
+    gemini.ts       # extractSTAR, extractCompetencies, verifyApiKey
+    audio.ts        # AudioRecorder (MediaRecorder wrapper)
+    competencies.ts # preset competency tag list
+    types.ts        # Story, JobProfile, Settings, StoryDraft
+  views/            # one file per screen
+  App.svelte        # layout shell + view router
+tests/
+  fixtures/         # star-draft.json, competencies.json
+  helpers.ts        # shared Gemini mock helper
+  *.spec.ts         # one spec file per view
+```
+
+---
+
+## CI
+
+GitHub Actions runs on every push and PR to `main`:
+
+| Job | Steps |
+|---|---|
+| **Quality** | `npm run check` (type check) → `npm run build` → `npm audit` |
+| **E2E** | Install Playwright Chromium → `npx playwright test` → upload report on failure |
+
+Dependency updates are managed by [Renovate](https://docs.renovatebot.com) (weekly, Monday mornings CET). Dev dependency patches and minor versions automerge when CI passes. The Gemini SDK is flagged for manual review.
+
+---
+
+## License
+
+MIT
