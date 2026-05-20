@@ -5,4 +5,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 export default defineConfig(({ command }) => ({
   plugins: [svelte()],
   base: command === 'build' ? '/starlog/' : '/',
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.APP_VERSION ?? 'dev'),
+  },
 }))
