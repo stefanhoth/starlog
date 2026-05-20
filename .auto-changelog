@@ -1,5 +1,5 @@
 {
-  "template": "keepachangelog",
+  "template": ".changelog-template.hbs",
   "unreleased": true,
   "commitLimit": false,
   "tagPattern": "^\\d{4}\\.\\d{2}\\.\\d{2}(\\.\\d+)?$",
