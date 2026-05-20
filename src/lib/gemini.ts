@@ -67,7 +67,7 @@ Output ONLY valid JSON — no preamble, no markdown fences, no explanation.
 STAR definitions (keep these strictly separate):
 - Situation: Pure context. Where, when, what environment. 2 sentences max. Do NOT mention the problem, challenge, or what needed to be done.
 - Task: YOUR specific responsibility or goal. What YOU were accountable for. 1-2 sentences max. No overlap with Situation.
-- Action: What YOU did, step by step. 3-5 items. Each item is one concrete action, 1 sentence.
+- Action: What YOU did, step by step. Extract ONLY actions explicitly described — do NOT invent or infer steps that were not mentioned. Return 1-5 items depending on what was actually stated. If fewer than 3 concrete actions are present, return only what was explicitly described and set quality.action to "low".
 - Result: Outcome and impact. Quantify where possible. 2-3 sentences max.
 
 Use this exact JSON structure:
@@ -86,7 +86,7 @@ Use this exact JSON structure:
     "task": "high | medium | low",
     "action": "high | medium | low",
     "result": "high | medium | low",
-    "notes": "Honest 1-2 sentence assessment."
+    "notes": "Honest 1-2 sentence assessment. If action steps were sparse, explain what was missing."
   }
 }`;
 
