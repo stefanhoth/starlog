@@ -127,7 +127,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          LAST_TAG=$(git tag --sort=version:refname | grep -E '^[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?$' | tail -1)
           if [ -n "$LAST_TAG" ]; then
             NOTES=$(git log "${LAST_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
           else

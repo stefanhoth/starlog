@@ -3,6 +3,7 @@
   "unreleased": true,
   "commitLimit": false,
   "tagPattern": "^\\d{4}\\.\\d{2}\\.\\d{2}(\\.\\d+)?$",
+  "appendGitTag": "--sort=-version:refname",
   "commitUrl": "https://github.com/stefanhoth/starlog/commit/{id}",
   "issueUrl": "https://github.com/stefanhoth/starlog/issues/{id}",
   "mergeUrl": "https://github.com/stefanhoth/starlog/pull/{id}",
