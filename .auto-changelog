@@ -1,0 +1,10 @@
+{
+  "template": "keepachangelog",
+  "unreleased": true,
+  "commitLimit": false,
+  "tagPattern": "^\\d{4}\\.\\d{2}\\.\\d{2}(\\.\\d+)?$",
+  "commitUrl": "https://github.com/stefanhoth/starlog/commit/{id}",
+  "issueUrl": "https://github.com/stefanhoth/starlog/issues/{id}",
+  "mergeUrl": "https://github.com/stefanhoth/starlog/pull/{id}",
+  "compareUrl": "https://github.com/stefanhoth/starlog/compare/{from}...{to}"
+}
