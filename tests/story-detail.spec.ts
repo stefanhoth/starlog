@@ -1,0 +1,83 @@
+import { test, expect } from '@playwright/test';
+import type { Story } from '../src/lib/types';
+
+function makeStory(overrides: Partial<Story> = {}): Story {
+  return {
+    id: 'story-detail-test',
+    title: 'Webpack Migration Story',
+    original_language: 'en',
+    competency_tags: ['Technical Depth'],
+    star: { situation: 'Original situation', task: 'Original task', action: ['Step one', 'Step two'], result: 'Original result' },
+    quality: { situation: 'high', task: 'medium', action: 'high', result: 'low', notes: 'Result needs more specifics.' },
+    notes: '',
+    rank: 3,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+async function openDetail(page: import('@playwright/test').Page, story: Story) {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.route('**/generativelanguage.googleapis.com/**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
+  );
+  await page.getByTestId('api-key-input').fill('AIzaTestKey123');
+  await expect(page.getByTestId('verify-success')).toBeVisible({ timeout: 10000 });
+  await page.getByTestId('onboarding-submit').click();
+  await page.evaluate((s) => {
+    localStorage.setItem('starlog_stories', JSON.stringify([s]));
+    sessionStorage.setItem('starlog_active_story', s.id);
+  }, story);
+  await page.reload();
+  // Navigate to story-detail view via library card click
+  await page.getByTestId('story-card').first().click();
+  await expect(page.getByTestId('story-detail-view')).toBeVisible({ timeout: 5000 });
+}
+
+test('story detail shows all fields', async ({ page }) => {
+  await openDetail(page, makeStory());
+  await expect(page.getByTestId('detail-title')).toHaveValue('Webpack Migration Story');
+  await expect(page.getByTestId('detail-situation')).toHaveValue('Original situation');
+  await expect(page.getByTestId('detail-result')).toHaveValue('Original result');
+  await expect(page.getByTestId('detail-action-item')).toHaveCount(2);
+});
+
+test('editing result and saving persists on reload', async ({ page }) => {
+  await openDetail(page, makeStory());
+  await page.getByTestId('detail-result').fill('New result text');
+  await page.getByTestId('save-btn').click();
+  await page.reload();
+  await page.getByTestId('story-card').first().click();
+  await expect(page.getByTestId('detail-result')).toHaveValue('New result text');
+});
+
+test('setting rank to 4 stars persists', async ({ page }) => {
+  await openDetail(page, makeStory());
+  await page.getByTestId('rank-star').nth(3).click(); // 4th star = rank 4
+  await page.getByTestId('save-btn').click();
+  const stories = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_stories') ?? '[]'));
+  expect(stories[0].rank).toBe(4);
+});
+
+test('delete shows modal, cancel keeps story', async ({ page }) => {
+  await openDetail(page, makeStory());
+  await page.getByTestId('delete-btn').click();
+  await expect(page.getByTestId('delete-confirm-modal')).toBeVisible();
+  await page.getByTestId('delete-cancel').click();
+  await expect(page.getByTestId('delete-confirm-modal')).not.toBeVisible();
+  const stories = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_stories') ?? '[]'));
+  expect(stories).toHaveLength(1);
+});
+
+test('delete confirm removes story and returns to library', async ({ page }) => {
+  await openDetail(page, makeStory());
+  await page.getByTestId('delete-btn').click();
+  await page.getByTestId('delete-confirm').click();
+  await expect(page.getByTestId('library-view')).toBeVisible();
+  const stories = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_stories') ?? '[]'));
+  expect(stories).toHaveLength(0);
+});

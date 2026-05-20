@@ -1,0 +1,22 @@
+{
+  "title": "Tech Debt Fix-it Friday Initiative",
+  "original_language": "de",
+  "competency_tags": ["Delivery", "Leadership"],
+  "star": {
+    "situation": "At ResearchGate, our platform team was responsible for shared tooling and infrastructure across multiple product teams.",
+    "task": "I needed to create a sustainable process for addressing accumulated technical debt without sacrificing roadmap delivery.",
+    "action": [
+      "Introduced 'Fix-it Friday' — a weekly time-box where engineers could tackle any tech debt or improvement they chose.",
+      "Created a dedicated Slack channel and ticket label so issues could be logged without interrupting flow.",
+      "Ran the initiative for one quarter, tracking participation and output."
+    ],
+    "result": "Engineer satisfaction with the codebase improved noticeably. Several long-standing issues were resolved. The team reported feeling less frustrated and more in control of their work environment."
+  },
+  "quality": {
+    "situation": "high",
+    "task": "high",
+    "action": "high",
+    "result": "medium",
+    "notes": "Strong structure. Result would benefit from quantitative metrics (e.g. ticket count resolved, satisfaction score)."
+  }
+}
