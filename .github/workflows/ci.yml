@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   # ── Quality gate: type check + build + audit ───────────────────────────────
   quality:
@@ -65,3 +69,67 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # ── Deploy to GitHub Pages ─────────────────────────────────────────────────
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [quality]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      pages: write
+      id-token: write
+      contents: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+      - uses: actions/deploy-pages@v4
+        id: deploy
+
+      - name: Tag release (CalVer YYYY.MM.DD)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BASE=$(date -u +"%Y.%m.%d")
+          VERSION="$BASE"
+          COUNTER=0
+          while git ls-remote --tags origin "refs/tags/${VERSION}" | grep -q .; do
+            COUNTER=$((COUNTER + 1))
+            VERSION="${BASE}.${COUNTER}"
+          done
+
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            NOTES=$(git log "${LAST_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
+          else
+            NOTES=$(git log --pretty=format:"- %s" --no-merges)
+          fi
+          [ -z "$NOTES" ] && NOTES="- Maintenance / dependency updates"
+
+          gh release create "$VERSION" \
+            --title "$VERSION" \
+            --notes "$NOTES" \
+            --latest
