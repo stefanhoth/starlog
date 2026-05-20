@@ -105,6 +105,7 @@
   {#if !currentStory}
     <p class="text-base-content/40 text-center mt-16">No stories to show.</p>
   {:else}
+    <div class="flex-1 w-full max-w-3xl mx-auto flex flex-col">
     <!-- Story card — click toggles expand -->
     <button
       class="flex-1 w-full text-left bg-base-200 rounded-2xl p-8 cursor-pointer hover:bg-base-300 transition-colors"
@@ -209,6 +210,7 @@
       >
         Next →
       </button>
+    </div>
     </div>
   {/if}
 </div>
