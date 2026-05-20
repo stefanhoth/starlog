@@ -28,7 +28,7 @@
 
   function openStory(id: string) {
     activeStoryId = id;
-    navigate('story-detail' as any); // Task 8
+    navigate('story-detail');
     // Store selected id for detail view
     sessionStorage.setItem('starlog_active_story', id);
   }
