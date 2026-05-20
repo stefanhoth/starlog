@@ -26,6 +26,5 @@ jobs:
           | while read -r pr; do
               echo "Updating PR #$pr…"
               gh pr update-branch "$pr" \
-                --expected-head-sha "$(gh pr view "$pr" --json headRefOid --jq '.headRefOid')" \
                 || echo "PR #$pr skipped (conflicts or already up to date)"
             done
