@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* DaisyUI sometimes uppercases .btn text — override to sentence case */
+.btn { text-transform: none; letter-spacing: 0; }
+
 @media print {
   nav, .btn, [data-testid="reextract-btn"], [data-testid="print-btn"] { display: none !important; }
   .print-only { display: block !important; }
