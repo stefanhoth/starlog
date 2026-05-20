@@ -101,8 +101,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Compute CalVer tag
+        run: |
+          BASE=$(date -u +"%Y.%m.%d")
+          VERSION="$BASE"
+          COUNTER=0
+          while git ls-remote --tags origin "refs/tags/${VERSION}" | grep -q .; do
+            COUNTER=$((COUNTER + 1))
+            VERSION="${BASE}.${COUNTER}"
+          done
+          echo "CALVER_TAG=${VERSION}" >> "$GITHUB_ENV"
+
       - name: Build
         run: npm run build
+        env:
+          APP_VERSION: ${{ env.CALVER_TAG }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -115,14 +128,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BASE=$(date -u +"%Y.%m.%d")
-          VERSION="$BASE"
-          COUNTER=0
-          while git ls-remote --tags origin "refs/tags/${VERSION}" | grep -q .; do
-            COUNTER=$((COUNTER + 1))
-            VERSION="${BASE}.${COUNTER}"
-          done
-
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -n "$LAST_TAG" ]; then
             NOTES=$(git log "${LAST_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
@@ -131,7 +136,7 @@ jobs:
           fi
           [ -z "$NOTES" ] && NOTES="- Maintenance / dependency updates"
 
-          gh release create "$VERSION" \
-            --title "$VERSION" \
+          gh release create "${{ env.CALVER_TAG }}" \
+            --title "${{ env.CALVER_TAG }}" \
             --notes "$NOTES" \
             --latest

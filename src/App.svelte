@@ -73,6 +73,19 @@
             <span>Settings</span>
           </button>
         </div>
+
+        <div class="px-4 py-2 border-t border-base-300">
+          <a
+            href="https://github.com/stefanhoth/starlog/releases/tag/{__APP_VERSION__}"
+            rel="nofollow noreferrer noopener"
+            target="_blank"
+            class="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            data-testid="version-link"
+          >
+            {__APP_VERSION__}
+            <span class="text-xs">↗</span>
+          </a>
+        </div>
       {/if}
     </aside>
 
