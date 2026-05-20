@@ -96,11 +96,10 @@
     {/if}
   </div>
 
-  <!-- STAR Sections -->
+  <!-- STAR Sections (S and T) -->
   {#each [
     { key: 'situation', label: 'Situation', value: situation, setter: (v: string) => situation = v },
     { key: 'task',      label: 'Task',      value: task,      setter: (v: string) => task = v },
-    { key: 'result',    label: 'Result',    value: result,    setter: (v: string) => result = v },
   ] as section}
     <div class="form-control mb-4">
       <label class="label" for="section-{section.key}">
@@ -117,7 +116,7 @@
     </div>
   {/each}
 
-  <!-- Action items -->
+  <!-- Action items (A) -->
   <div class="form-control mb-4">
     <div class="flex items-center justify-between mb-2">
       <span class="label-text font-semibold">Action Steps {QUALITY_ICON[quality.action]}</span>
@@ -137,6 +136,21 @@
         {/if}
       </div>
     {/each}
+  </div>
+
+  <!-- Result (R) -->
+  <div class="form-control mb-4">
+    <label class="label" for="section-result">
+      <span class="label-text font-semibold">Result</span>
+      <span class="label-text-alt">{QUALITY_ICON[quality.result] ?? ''}</span>
+    </label>
+    <textarea
+      id="section-result"
+      class="textarea textarea-bordered h-24 resize-y"
+      value={result}
+      oninput={(e) => result = (e.target as HTMLTextAreaElement).value}
+      data-testid="section-result"
+    ></textarea>
   </div>
 
   <!-- Quality notes -->
