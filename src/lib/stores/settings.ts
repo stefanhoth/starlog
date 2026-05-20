@@ -30,6 +30,10 @@ function createSettingsStore() {
       localStorage.setItem(KEY, JSON.stringify(value));
       set(value);
     },
+    reset() {
+      localStorage.removeItem(KEY);
+      set({ ...defaults });
+    },
   };
 }
 

@@ -56,6 +56,10 @@ function createStoriesStore() {
     getById(id: string): Story | undefined {
       return get(this).find(s => s.id === id);
     },
+    reset() {
+      localStorage.removeItem(KEY);
+      set([]);
+    },
   };
 }
 
