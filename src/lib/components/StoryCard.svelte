@@ -3,6 +3,7 @@
 
   let { story, onclick }: { story: Story; onclick: () => void } = $props();
 
+  // emerald = strong, amber = room to improve, red = needs work (colour-blind: also conveyed via aria-label)
   const QUALITY_DOT: Record<string, string> = {
     high:   'bg-emerald-400',
     medium: 'bg-amber-400',
@@ -41,8 +42,9 @@
       </h3>
       <span
         class="shrink-0 w-2.5 h-2.5 rounded-full mt-0.5 {QUALITY_DOT[worstQuality]}"
-        title="{QUALITY_LABEL[worstQuality]}"
-        aria-label="{QUALITY_LABEL[worstQuality]}"
+        title="AI quality: {QUALITY_LABEL[worstQuality]}"
+        aria-label="AI quality: {QUALITY_LABEL[worstQuality]}"
+        role="img"
       ></span>
     </div>
 
