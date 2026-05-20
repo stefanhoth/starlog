@@ -25,6 +25,6 @@ jobs:
             --jq '.[] | select(.isDraft == false) | .number' \
           | while read -r pr; do
               echo "Updating PR #$pr…"
-              gh pr update-branch "$pr" \
+              gh pr update-branch "$pr" --rebase \
                 || echo "PR #$pr skipped (conflicts or already up to date)"
             done
