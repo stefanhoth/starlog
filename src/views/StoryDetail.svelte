@@ -64,14 +64,14 @@
     data-testid="detail-title"
   />
 
-  <!-- Rank -->
+  <!-- Strength -->
   <div class="flex items-center gap-2 mb-4">
-    <span class="text-sm font-medium text-base-content/60">Rank:</span>
+    <span class="text-sm font-medium text-base-content/60" title="Your confidence rating for this story (1–5)">Strength:</span>
     {#each Array(5) as _, i}
       <button
         class="text-xl {i < rank ? 'text-warning' : 'text-base-300'}"
         onclick={() => rank = i + 1}
-        aria-label="Rate {i + 1} stars"
+        aria-label="Set strength to {i + 1}"
         data-testid="rank-star"
       >★</button>
     {/each}
