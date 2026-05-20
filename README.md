@@ -107,14 +107,17 @@ tests/
 
 ---
 
-## CI
+## CI / CD
 
 GitHub Actions runs on every push and PR to `main`:
 
-| Job | Steps |
-|---|---|
-| **Quality** | `npm run check` (type check) → `npm run build` → `npm audit` |
-| **E2E** | Install Playwright Chromium → `npx playwright test` → upload report on failure |
+| Job | Trigger | Steps |
+|---|---|---|
+| **Quality** | push + PR | `npm run check` → `npm run build` → `npm audit` |
+| **E2E** | PR only | Playwright tests in pre-baked Chromium container |
+| **Deploy** | push to main | Build → publish to [GitHub Pages](https://stefanhoth.github.io/starlog/) → CalVer release tag |
+
+Every successful deploy creates a `YYYY.MM.DD` release tag (e.g. `2026.05.20`). Multiple deploys on the same day get a numeric suffix (`.1`, `.2`, …). See [CHANGELOG.md](CHANGELOG.md) for a human-maintained history of notable changes.
 
 Dependency updates are managed by [Renovate](https://docs.renovatebot.com) (weekly, Monday mornings CET). Dev dependency patches and minor versions automerge when CI passes. The Gemini SDK is flagged for manual review.
 
