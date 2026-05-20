@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
 import { get } from 'svelte/store';
 import { settingsStore } from './stores/settings';
 import type { StoryDraft } from './types';
@@ -115,7 +115,7 @@ export async function extractSTAR(input: Blob | string): Promise<StoryDraft> {
   const model = getModel();
 
   return withRetry(async () => {
-    let parts: object[];
+    let parts: Part[];
 
     if (input instanceof Blob) {
       const arrayBuffer = await input.arrayBuffer();

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -9,11 +9,15 @@ const FIXTURE = JSON.parse(
   readFileSync(path.join(__dirname, 'fixtures/star-draft.json'), 'utf8')
 );
 
-// Audio file from workspace to test the upload path
-const AUDIO_FILE = path.resolve(
+// Prefer the real workspace recording for richer local testing;
+// fall back to the committed WAV fixture in CI where the file is absent.
+const REAL_AUDIO = path.resolve(
   __dirname,
   '../../STAR Tech Debt Management mit Fix-it-Friday.m4a'
 );
+const AUDIO_FILE = existsSync(REAL_AUDIO)
+  ? REAL_AUDIO
+  : path.join(__dirname, 'fixtures/test-audio.wav');
 
 function mockGemini(page: import('@playwright/test').Page) {
   return page.route('**/generativelanguage.googleapis.com/**', route =>
