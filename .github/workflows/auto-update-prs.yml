@@ -13,18 +13,25 @@ jobs:
       pull-requests: write  # read PR list and update branches
 
     steps:
-      - name: Update all open PR branches
+      - name: Update oldest open PR branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh pr list \
+          # Pick only the oldest non-draft PR — when it merges the workflow
+          # fires again and advances the next one, draining the backlog
+          # one at a time with no redundant rebases.
+          PR=$(gh pr list \
             --base main \
             --state open \
-            --json number,isDraft \
-            --jq '.[] | select(.isDraft == false) | .number' \
-          | while read -r pr; do
-              echo "Updating PR #$pr…"
-              gh pr update-branch "$pr" --rebase \
-                || echo "PR #$pr skipped (conflicts or already up to date)"
-            done
+            --json number,isDraft,createdAt \
+            --jq '[.[] | select(.isDraft == false)] | sort_by(.createdAt) | first | .number')
+
+          if [ -z "$PR" ]; then
+            echo "No open PRs to update."
+            exit 0
+          fi
+
+          echo "Updating PR #$PR…"
+          gh pr update-branch "$PR" --rebase \
+            || echo "PR #$PR skipped (conflicts or already up to date)"
