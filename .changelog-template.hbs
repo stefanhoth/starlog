@@ -1,0 +1,22 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+Versioning: [CalVer](https://calver.org/) — `YYYY.MM.DD[.N]`
+
+{{#each releases}}
+{{#if href}}
+## [{{title}}]({{href}}) - {{isoDate}}
+{{else}}
+## {{title}}
+{{/if}}
+
+{{#each merges}}
+- {{message}}{{#if href}} [`#{{id}}`]({{href}}){{/if}}
+{{/each}}
+{{#unless merges}}
+- Maintenance / dependency updates
+{{/unless}}
+
+{{/each}}
