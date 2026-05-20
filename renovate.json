@@ -33,6 +33,22 @@
       "matchPackageNames": ["@google/generative-ai"],
       "automerge": false,
       "labels": ["dependencies", "review-required"]
+    },
+    {
+      "description": "Group @playwright/test and the MCR container image tag — they must stay in sync",
+      "matchPackageNames": ["@playwright/test"],
+      "groupName": "Playwright"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/.*\\.yml$/"],
+      "matchStrings": [
+        "image: mcr\\.microsoft\\.com/playwright:v(?<currentValue>[^-]+)-jammy"
+      ],
+      "depNameTemplate": "@playwright/test",
+      "datasourceTemplate": "npm"
     }
   ]
 }
