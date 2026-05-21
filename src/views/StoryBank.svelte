@@ -1,7 +1,7 @@
 <script lang="ts">
   import { storiesStore } from '../lib/stores/stories';
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
-  import { navigate } from '../lib/stores/view';
+  import { navigate, openStory } from '../lib/stores/view';
   import type { Story } from '../lib/types';
 
   let search = $state('');
@@ -17,11 +17,6 @@
         .includes(q);
     })
   );
-
-  function openStory(id: string) {
-    sessionStorage.setItem('starlog_active_story', id);
-    navigate('story-detail');
-  }
 
   function getJobMappings(story: Story) {
     return $jobProfilesStore.flatMap(profile =>
