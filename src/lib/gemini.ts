@@ -168,14 +168,14 @@ export async function extractCompetencies(jobDescription: string): Promise<strin
 export async function generateInspirationQuestions(competency: string): Promise<string[]> {
   const model = getModel();
 
-  const prompt = `You are helping a professional prepare for job interviews using the STAR method.
-Generate exactly 3 open-ended questions that will help them recall a specific work experience
-demonstrating the competency: "${competency}".
+  const prompt = `You are helping a professional recall real work experiences for job interviews.
+Generate exactly 3 short, punchy questions for the competency: "${competency}".
 
-Questions should:
-- Be concrete and memory-triggering ("Tell me about a time when...")
-- Vary in angle (team, individual, crisis, growth)
-- Not repeat each other
+Rules:
+- Max 12 words per question
+- Start with "When", "What", "How", or an action verb — never "Tell me about a time"
+- Vary the angle: one about people/team dynamics, one about a challenge or failure, one about outcome or impact
+- Plain conversational language, no corporate jargon
 
 Respond with a JSON array of exactly 3 strings. No markdown, no extra keys.`;
 
