@@ -59,9 +59,9 @@
 {:else}
   <div class="flex h-screen bg-base-100" data-testid="app-shell">
 
-    <!-- ── Sidebar ─────────────────────────────────────────────────── -->
+    <!-- ── Sidebar (desktop only) ───────────────────────────────────── -->
     <aside
-      class="w-56 bg-base-100 border-r border-base-300 flex flex-col shrink-0"
+      class="hidden md:flex w-56 bg-base-100 border-r border-base-300 flex-col shrink-0"
       data-testid="nav"
     >
       <div class="px-5 py-4 border-b border-base-300 flex items-center gap-2">
@@ -162,7 +162,7 @@
     </aside>
 
     <!-- ── Main ───────────────────────────────────────────────────── -->
-    <main class="flex-1 overflow-y-auto bg-base-200" data-testid="main-content">
+    <main class="flex-1 overflow-y-auto bg-base-200 pb-16 md:pb-0" data-testid="main-content">
       {#if $currentView === 'job-hub' || $currentView === 'job-profile-detail'}
         <JobHub />
       {:else if $currentView === 'gap-fill'}
@@ -194,6 +194,57 @@
         {/if}
       {/if}
     </main>
+
+    <!-- ── Mobile bottom nav (mobile only) ──────────────────────────── -->
+    <nav
+      class="fixed bottom-0 left-0 right-0 h-14 bg-base-100 border-t border-base-300 flex md:hidden z-30"
+      data-testid="mobile-nav"
+    >
+      <button
+        class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors
+          {$currentView === 'job-hub' || $currentView === 'gap-fill'
+            ? 'text-primary'
+            : 'text-base-content/40'}"
+        onclick={() => $activeProfileId ? openJob($activeProfileId) : navigate('add-job')}
+        data-testid="mobile-nav-jobs"
+      >
+        <span class="text-base leading-none">💼</span>
+        <span>Jobs</span>
+      </button>
+      <button
+        class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors
+          {$currentView === 'story-bank' || $currentView === 'story-detail'
+            ? 'text-primary'
+            : 'text-base-content/40'}"
+        onclick={() => navigate('story-bank')}
+        data-testid="mobile-nav-stories"
+      >
+        <span class="text-base leading-none">📚</span>
+        <span>Stories</span>
+      </button>
+      <button
+        class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors
+          {$currentView === 'capture' || $currentView === 'review'
+            ? 'text-primary'
+            : 'text-base-content/40'}"
+        onclick={() => navigate('capture')}
+        data-testid="mobile-nav-capture"
+      >
+        <span class="text-base leading-none">✏️</span>
+        <span>Capture</span>
+      </button>
+      <button
+        class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors
+          {$currentView === 'onboarding' && $settingsStore.consentGiven
+            ? 'text-primary'
+            : 'text-base-content/40'}"
+        onclick={() => navigate('onboarding')}
+        data-testid="mobile-nav-settings"
+      >
+        <span class="text-base leading-none">⚙️</span>
+        <span>Settings</span>
+      </button>
+    </nav>
 
   </div>
 {/if}

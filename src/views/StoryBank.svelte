@@ -75,7 +75,7 @@
     </div>
   {:else}
     <div class="border border-base-300 rounded-xl overflow-hidden bg-base-100">
-      <div class="grid grid-cols-[2fr_1.2fr_1.8fr] px-4 py-2 bg-base-200 border-b border-base-300 text-xs font-semibold uppercase tracking-wide text-base-content/50">
+      <div class="hidden sm:grid grid-cols-[2fr_1.2fr_1.8fr] px-4 py-2 bg-base-200 border-b border-base-300 text-xs font-semibold uppercase tracking-wide text-base-content/50">
         <span>Story</span>
         <span>Tags</span>
         <span>Used in</span>
@@ -87,7 +87,8 @@
         {@const backupCount = mappings.length - goToCount}
 
         <div
-          class="grid grid-cols-[2fr_1.2fr_1.8fr] px-4 py-3 border-b border-base-200 last:border-0 hover:bg-base-50 cursor-pointer transition-colors items-start"
+          class="flex flex-col gap-1 px-4 py-3 border-b border-base-200 last:border-0 hover:bg-base-50 cursor-pointer transition-colors
+            sm:grid sm:grid-cols-[2fr_1.2fr_1.8fr] sm:items-start sm:gap-0"
           onclick={() => openStory(story.id)}
           role="button"
           tabindex="0"
@@ -108,7 +109,7 @@
             {/if}
           </div>
 
-          <div onclick={(e) => { e.stopPropagation(); popoverStoryId = popoverStoryId === story.id ? null : story.id; }}>
+          <div class="hidden sm:block" onclick={(e) => { e.stopPropagation(); popoverStoryId = popoverStoryId === story.id ? null : story.id; }}>
             {#if mappings.length === 0}
               <span class="text-xs text-base-content/30 italic">— unmapped</span>
             {:else}
