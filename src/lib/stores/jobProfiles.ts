@@ -55,6 +55,10 @@ function createJobProfilesStore() {
       localStorage.removeItem(KEY);
       set([]);
     },
+    restore(profiles: JobProfile[]) {
+      persist(profiles);
+      set(profiles);
+    },
   };
 }
 
