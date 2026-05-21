@@ -51,7 +51,8 @@ Open [http://localhost:5173](http://localhost:5173), enter your Gemini API key, 
 | Styling | Tailwind CSS v3 + DaisyUI v4 | Utility-first layout, component tokens for consistent UI |
 | Build | Vite 6 | Near-instant HMR in development; fast production builds |
 | AI | Gemini 2.5 Flash (`@google/generative-ai`) | Multimodal (audio + text in one call); generous free tier |
-| Storage | `localStorage` (stories, profiles, settings) + `sessionStorage` (navigation state) | No backend needed; data never leaves the device |
+| Storage | `localStorage` (stories, profiles, settings) + `sessionStorage` (transient UI state) | No backend needed; data never leaves the device |
+| Routing | Hash-based (`#/`) via History API | Deep links and back/forward work on GitHub Pages without server config |
 | Tests | Playwright (Chromium) | Real browser, real MediaRecorder, Gemini mocked via `page.route` |
 
 ### Data model (simplified)

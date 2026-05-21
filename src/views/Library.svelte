@@ -1,6 +1,6 @@
 <script lang="ts">
   import { storiesStore } from '../lib/stores/stories';
-  import { navigate } from '../lib/stores/view';
+  import { navigate, openStory } from '../lib/stores/view';
   import StoryCard from '../lib/components/StoryCard.svelte';
   import { COMPETENCIES } from '../lib/competencies';
 
@@ -26,11 +26,9 @@
       : [...selectedTags, tag];
   }
 
-  function openStory(id: string) {
+  function openStoryLocal(id: string) {
     activeStoryId = id;
-    navigate('story-detail');
-    // Store selected id for detail view
-    sessionStorage.setItem('starlog_active_story', id);
+    openStory(id);
   }
 
   function startInterview() {
@@ -99,7 +97,7 @@
   {:else}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" data-testid="story-grid">
       {#each filtered as story (story.id)}
-        <StoryCard {story} onclick={() => openStory(story.id)} />
+        <StoryCard {story} onclick={() => openStoryLocal(story.id)} />
       {/each}
     </div>
   {/if}

@@ -13,9 +13,10 @@
   import StoryBank from './views/StoryBank.svelte';
   import InterviewMode from './views/InterviewMode.svelte';
 
-  // Redirect to onboarding if not yet configured; existing users go to job hub
+  // Redirect to onboarding if not yet configured; existing users go to job hub.
+  // Guard against pushing a redundant history entry when URL already resolved correctly.
   if (!$settingsStore.consentGiven) {
-    navigate('onboarding');
+    if ($currentView !== 'onboarding') navigate('onboarding');
   } else if ($currentView === 'onboarding') {
     navigate('job-hub');
   }
