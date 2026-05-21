@@ -97,10 +97,7 @@
       >
         {reextracting ? 'Re-extracting…' : '↺ Re-extract competencies'}
       </button>
-      <button class="btn btn-sm btn-ghost" onclick={() => window.print()} data-testid="print-btn">
-        🖨️ Print cheat sheet
-      </button>
-      {#if hasMappedStories}
+{#if hasMappedStories}
         <button class="btn btn-sm btn-outline" onclick={startInterview} data-testid="profile-interview-btn">
           🎤 Interview
         </button>
@@ -161,27 +158,6 @@
       {/each}
     </div>
 
-    <!-- Print view -->
-    <div class="print-only hidden">
-      <h1>{profile.company} — {profile.role}</h1>
-      {#each profile.extractedCompetencies as competency}
-        {@const ids = profile.competencyMap[competency] ?? []}
-        {#if ids.length > 0}
-          <section class="page-break-before">
-            <h2>{competency}</h2>
-            {#each ids as storyId}
-              {@const story = $storiesStore.find(s => s.id === storyId)}
-              {#if story}
-                <h3>{story.title}</h3>
-                <p><strong>S:</strong> {story.star.situation}</p>
-                <p><strong>T:</strong> {story.star.task}</p>
-                <ul>{#each story.star.action as a}<li>{a}</li>{/each}</ul>
-                <p><strong>R:</strong> {story.star.result}</p>
-              {/if}
-            {/each}
-          </section>
-        {/if}
-      {/each}
-    </div>
+
   {/if}
 </div>
