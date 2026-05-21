@@ -60,6 +60,10 @@ function createStoriesStore() {
       localStorage.removeItem(KEY);
       set([]);
     },
+    restore(stories: Story[]) {
+      persist(stories);
+      set(stories);
+    },
   };
 }
 
