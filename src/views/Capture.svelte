@@ -1,15 +1,17 @@
 <script lang="ts">
   import { extractSTAR, generateInspirationQuestions, GeminiError } from '../lib/gemini';
   import { AudioRecorder } from '../lib/audio';
-  import { navigate } from '../lib/stores/view';
+  import { navigate, currentView } from '../lib/stores/view';
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { COMPETENCIES } from '../lib/competencies';
   import { PROMPTS } from '../lib/inspiration';
 
-  // Gap-fill mode: set by GapFill entry point via sessionStorage
+  // Gap-fill mode is authoritative from the router, not sessionStorage, to avoid
+  // stale values bleeding into a normal "+ New Story" capture session.
+  const isGapMode = $derived($currentView === 'gap-fill');
+
   const gapFillProfileId = sessionStorage.getItem('starlog_gap_profile') ?? '';
   const gapFillComp = sessionStorage.getItem('starlog_gap_competency') ?? '';
-  const isGapMode = Boolean(gapFillComp);
 
   const gapFillProfile = $derived(
     isGapMode ? ($jobProfilesStore.find(p => p.id === gapFillProfileId) ?? null) : null
