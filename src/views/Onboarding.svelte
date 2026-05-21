@@ -72,9 +72,8 @@
   function submitKey() {
     if (!canSave) return;
     settingsStore.set({ apiKey: apiKey.trim(), consentGiven: true });
-    // First time: go to job entry. Updating key: go back to hub.
     if ($jobProfilesStore.length === 0) {
-      step = 'job-entry';
+      navigate('add-job');
     } else {
       navigate('job-hub');
     }
@@ -500,6 +499,7 @@
           class="btn btn-primary flex-1"
           onclick={saveJob}
           disabled={editableComps.length === 0}
+          data-testid="profile-save"
         >
           Save · open job hub →
         </button>

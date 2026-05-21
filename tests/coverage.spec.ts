@@ -38,90 +38,69 @@ function makeProfile(stories: Story[], competencyMap: Record<string, string[]> =
   };
 }
 
-async function openProfileDetail(
+/** Seed profile + stories and navigate to job-hub. */
+async function openJobHub(
   page: import('@playwright/test').Page,
   profile: JobProfile,
   stories: Story[] = []
 ) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
-  await page.reload();
   await page.route('**/generativelanguage.googleapis.com/**', route =>
     route.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
   );
-  await page.getByTestId('api-key-input').fill('AIzaTestKey123');
-  await expect(page.getByTestId('verify-success')).toBeVisible({ timeout: 10000 });
-  await page.getByTestId('onboarding-submit').click();
   await page.evaluate(({ p, s }) => {
+    localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
     localStorage.setItem('starlog_job_profiles', JSON.stringify([p]));
     localStorage.setItem('starlog_stories', JSON.stringify(s));
     sessionStorage.setItem('starlog_active_profile', p.id);
   }, { p: profile, s: stories });
   await page.reload();
-  await page.getByTestId('nav-job-profiles').click();
-  await page.getByTestId('job-profile-card').click();
-  await expect(page.getByTestId('job-profile-detail-view')).toBeVisible();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
 }
 
-test('coverage matrix shows all extracted competencies', async ({ page }) => {
-  await openProfileDetail(page, makeProfile([]));
-  const rows = page.getByTestId('coverage-row');
+test('competency list shows all extracted competencies', async ({ page }) => {
+  await openJobHub(page, makeProfile([]));
+  const rows = page.getByTestId('competency-row');
   await expect(rows).toHaveCount(COMPETENCY_FIXTURE.length);
 });
 
-test('unmapped competency shows red indicator', async ({ page }) => {
-  await openProfileDetail(page, makeProfile([]));
-  const firstRow = page.getByTestId('coverage-row').first();
-  await expect(firstRow.getByText('🔴')).toBeVisible();
+test('unmapped competency shows draft button', async ({ page }) => {
+  await openJobHub(page, makeProfile([]));
+  const firstRow = page.getByTestId('competency-row').first();
+  await expect(firstRow.getByTestId('draft-btn')).toBeVisible();
 });
 
-test('clicking competency row opens story picker', async ({ page }) => {
+test('clicking map-existing-btn opens story picker modal', async ({ page }) => {
   const story = makeStory();
-  await openProfileDetail(page, makeProfile([story]), [story]);
-  await page.getByTestId('coverage-competency-btn').first().click();
+  await openJobHub(page, makeProfile([story]), [story]);
+  await page.getByTestId('map-existing-btn').first().click();
   await expect(page.getByTestId('story-picker')).toBeVisible();
 });
 
-test('selecting story in picker turns indicator green', async ({ page }) => {
+test('selecting story in picker marks competency as covered', async ({ page }) => {
   const story = makeStory({ id: 'story-1' });
-  await openProfileDetail(page, makeProfile([story]), [story]);
-  await page.getByTestId('coverage-competency-btn').first().click();
+  await openJobHub(page, makeProfile([story]), [story]);
+  await page.getByTestId('map-existing-btn').first().click();
   await page.getByTestId('story-picker').locator('input[type="checkbox"]').first().check();
-  const firstRow = page.getByTestId('coverage-row').first();
-  await expect(firstRow.getByText('🟢')).toBeVisible();
+  // Save the mapping
+  await page.getByRole('button', { name: 'Save' }).click();
+  // First competency row should now show edit-mapping-btn (covered state)
+  await expect(page.getByTestId('competency-row').first().getByTestId('edit-mapping-btn')).toBeVisible();
 });
 
 test('same story can be mapped to two competencies', async ({ page }) => {
   const story = makeStory({ id: 'story-1' });
-  await openProfileDetail(page, makeProfile([story]), [story]);
+  await openJobHub(page, makeProfile([story]), [story]);
   // Map to first competency
-  await page.getByTestId('coverage-competency-btn').first().click();
+  await page.getByTestId('map-existing-btn').first().click();
   await page.getByTestId('story-picker').locator('input[type="checkbox"]').first().check();
-  await page.getByTestId('coverage-competency-btn').first().click(); // close
+  await page.getByRole('button', { name: 'Save' }).click();
   // Map to second competency
-  await page.getByTestId('coverage-competency-btn').nth(1).click();
+  await page.getByTestId('map-existing-btn').first().click();
   await page.getByTestId('story-picker').locator('input[type="checkbox"]').first().check();
-  // Both should be green
-  await expect(page.getByTestId('coverage-row').first().getByText('🟢')).toBeVisible();
-  await expect(page.getByTestId('coverage-row').nth(1).getByText('🟢')).toBeVisible();
-});
-
-test('re-extract with removed competency shows reconciliation modal', async ({ page }) => {
-  const story = makeStory({ id: 'story-1' });
-  // Profile has "OldCompetency" mapped with a story
-  const profile = makeProfile([story], { 'OldCompetency': ['story-1'] });
-  profile.extractedCompetencies = [...COMPETENCY_FIXTURE, 'OldCompetency'];
-  await openProfileDetail(page, profile, [story]);
-  // Mock re-extract to return list WITHOUT OldCompetency
-  await page.route('**/generativelanguage.googleapis.com/**', route =>
-    route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(COMPETENCY_FIXTURE) }] } }] }),
-    })
-  );
-  await page.getByTestId('reextract-btn').click();
-  await expect(page.getByTestId('reconcile-modal')).toBeVisible({ timeout: 10000 });
-  await page.getByTestId('orphan-remove').click();
-  await expect(page.getByTestId('reconcile-modal')).not.toBeVisible();
+  await page.getByRole('button', { name: 'Save' }).click();
+  // Both first two rows should now be covered (show edit-mapping-btn)
+  await expect(page.getByTestId('edit-mapping-btn')).toHaveCount(2);
 });

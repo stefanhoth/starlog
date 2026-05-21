@@ -20,61 +20,59 @@ function makeStory(overrides: Partial<Story> = {}): Story {
 async function seedLibrary(page: import('@playwright/test').Page, stories: Story[]) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
+  // Seed consent so we skip onboarding entirely
+  await page.evaluate((s) => {
+    localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+    localStorage.setItem('starlog_stories', JSON.stringify(s));
+  }, stories);
   await page.reload();
-  await page.route('**/generativelanguage.googleapis.com/**', route =>
-    route.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
-  );
-  await page.getByTestId('api-key-input').fill('AIzaTestKey123');
-  await expect(page.getByTestId('verify-success')).toBeVisible({ timeout: 10000 });
-  await page.getByTestId('onboarding-submit').click();
-  await page.evaluate((s) => localStorage.setItem('starlog_stories', JSON.stringify(s)), stories);
-  await page.reload();
+  // Navigate to story bank
+  await page.getByTestId('nav-story-bank').click();
+  await expect(page.getByTestId('story-bank-view')).toBeVisible();
 }
 
 test('empty library shows empty state', async ({ page }) => {
   await seedLibrary(page, []);
   await expect(page.getByTestId('empty-state')).toBeVisible();
-  await expect(page.getByTestId('story-grid')).not.toBeVisible();
 });
 
-test('library shows all story cards', async ({ page }) => {
+test('library shows all story rows', async ({ page }) => {
   const stories = [
     makeStory({ id: '1', title: 'Story One' }),
     makeStory({ id: '2', title: 'Story Two' }),
     makeStory({ id: '3', title: 'Story Three' }),
   ];
   await seedLibrary(page, stories);
-  await expect(page.getByTestId('story-card')).toHaveCount(3);
+  await expect(page.getByTestId('story-row')).toHaveCount(3);
 });
 
-test('filter by competency tag hides non-matching cards', async ({ page }) => {
+test('keyword search by competency tag hides non-matching rows', async ({ page }) => {
   const stories = [
-    makeStory({ id: '1', title: 'Leadership Story', competency_tags: ['Leadership'] }),
-    makeStory({ id: '2', title: 'Delivery Story', competency_tags: ['Delivery'] }),
-    makeStory({ id: '3', title: 'Both Story', competency_tags: ['Leadership', 'Delivery'] }),
+    makeStory({ id: '1', title: 'Alpha Story', competency_tags: ['Leadership'] }),
+    makeStory({ id: '2', title: 'Beta Story', competency_tags: ['Delivery'] }),
+    makeStory({ id: '3', title: 'Gamma Story', competency_tags: ['Leadership', 'Delivery'] }),
   ];
   await seedLibrary(page, stories);
-  await page.getByTestId('filter-tag-leadership').click();
-  await expect(page.getByTestId('story-card')).toHaveCount(2);
-  await page.getByText('Clear').click();
-  await expect(page.getByTestId('story-card')).toHaveCount(3);
+  await page.getByTestId('search-input').fill('leadership');
+  await expect(page.getByTestId('story-row')).toHaveCount(2);
+  await page.getByTestId('search-input').fill('');
+  await expect(page.getByTestId('story-row')).toHaveCount(3);
 });
 
-test('keyword search filters in real time', async ({ page }) => {
+test('keyword search by title filters in real time', async ({ page }) => {
   const stories = [
     makeStory({ id: '1', title: 'Webpack Migration' }),
     makeStory({ id: '2', title: 'Team Hiring Process' }),
   ];
   await seedLibrary(page, stories);
   await page.getByTestId('search-input').fill('webpack');
-  await expect(page.getByTestId('story-card')).toHaveCount(1);
+  await expect(page.getByTestId('story-row')).toHaveCount(1);
   await page.getByTestId('search-input').fill('');
-  await expect(page.getByTestId('story-card')).toHaveCount(2);
+  await expect(page.getByTestId('story-row')).toHaveCount(2);
 });
 
-test('no results state shown when filter matches nothing', async ({ page }) => {
+test('no results state shown when search matches nothing', async ({ page }) => {
   await seedLibrary(page, [makeStory({ competency_tags: ['Leadership'] })]);
-  await page.getByTestId('filter-tag-delivery').click();
+  await page.getByTestId('search-input').fill('delivery');
   await expect(page.getByTestId('no-results')).toBeVisible();
 });

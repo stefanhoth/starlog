@@ -213,6 +213,7 @@
             <button
               class="border-2 border-base-300 hover:border-primary rounded-xl p-5 text-left transition-colors group"
               onclick={() => submode = m.sub}
+              data-testid="mode-{m.sub}"
             >
               <div class="text-3xl mb-3">{m.icon}</div>
               <div class="font-semibold text-sm group-hover:text-primary transition-colors">{m.label}</div>

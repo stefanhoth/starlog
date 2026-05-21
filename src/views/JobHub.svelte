@@ -80,7 +80,7 @@
   </div>
 
   {#if !profile}
-    <div class="flex flex-col items-center justify-center gap-4 py-24 text-base-content/40">
+    <div class="flex flex-col items-center justify-center gap-4 py-24 text-base-content/40" data-testid="profiles-empty">
       <span class="text-5xl">💼</span>
       <button class="btn btn-primary" onclick={() => navigate('add-job')}>Add your first job</button>
     </div>

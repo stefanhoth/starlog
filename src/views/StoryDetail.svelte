@@ -9,7 +9,7 @@
   const storyId = sessionStorage.getItem('starlog_active_story') ?? '';
   const original = $storiesStore.find(s => s.id === storyId);
 
-  $effect(() => { if (!original) navigate('library'); });
+  $effect(() => { if (!original) navigate('story-bank'); });
 
   let title = $state(original?.title ?? '');
   let situation = $state(original?.star.situation ?? '');
@@ -38,7 +38,7 @@
   function deleteStory() {
     storiesStore.deleteStory(storyId);
     sessionStorage.removeItem('starlog_active_story');
-    navigate('library');
+    navigate('story-bank');
   }
 
   function addAction() { actions = [...actions, '']; }
@@ -53,7 +53,7 @@
 
 <div class="p-6 max-w-2xl mx-auto" data-testid="story-detail-view">
   <div class="flex items-center gap-2 mb-6">
-    <button class="btn btn-ghost btn-sm" onclick={() => navigate('library')}>← Back</button>
+    <button class="btn btn-ghost btn-sm" onclick={() => navigate('story-bank')}>← Back</button>
     <div class="flex-1"></div>
     <button class="btn btn-error btn-sm btn-outline" onclick={() => showDeleteConfirm = true} data-testid="delete-btn">Delete</button>
     <button class="btn btn-primary btn-sm" onclick={save} data-testid="save-btn">Save</button>
