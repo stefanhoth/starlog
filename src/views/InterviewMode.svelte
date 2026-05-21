@@ -39,24 +39,34 @@
   let groupIdx = $state(0);
   let storyIdx = $state(0);
   let expanded = $state(false);
+  let loopFlash = $state(false);
 
   const currentGroup = $derived(groups[Math.min(groupIdx, groups.length - 1)] ?? null);
   const currentStory = $derived(
     currentGroup?.stories[Math.min(storyIdx, (currentGroup?.stories.length ?? 1) - 1)] ?? null
   );
 
+  function flashLoop() {
+    loopFlash = true;
+    setTimeout(() => loopFlash = false, 600);
+  }
+
   function exit() {
     navigate(mode === 'profile' ? 'job-hub' : 'story-bank');
   }
   function nextStory() {
     if (!currentGroup) return;
-    storyIdx = storyIdx < currentGroup.stories.length - 1 ? storyIdx + 1 : 0;
+    const atEnd = storyIdx >= currentGroup.stories.length - 1;
+    storyIdx = atEnd ? 0 : storyIdx + 1;
     expanded = false;
+    if (atEnd) flashLoop();
   }
   function prevStory() {
     if (!currentGroup) return;
-    storyIdx = storyIdx > 0 ? storyIdx - 1 : currentGroup.stories.length - 1;
+    const atStart = storyIdx === 0;
+    storyIdx = atStart ? currentGroup.stories.length - 1 : storyIdx - 1;
     expanded = false;
+    if (atStart) flashLoop();
   }
   function nextGroup() {
     if (groupIdx < groups.length - 1) { groupIdx++; storyIdx = 0; expanded = false; }
@@ -256,7 +266,8 @@
         {#if currentGroup?.competency}
           <span>{currentGroup.competency}</span>
         {/if}
-        <span>{currentPosition} / {totalStories}</span>
+        <span class="transition-colors duration-150 {loopFlash ? 'text-primary font-bold' : ''}"
+          >{currentPosition} / {totalStories}</span>
         <button class="btn btn-ghost btn-xs text-neutral-content/60" onclick={exit} data-testid="exit-btn">esc ✕</button>
       </div>
     </div>
