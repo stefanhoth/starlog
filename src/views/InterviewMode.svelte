@@ -143,6 +143,8 @@
 
   // ── Live: ⌘K palette ─────────────────────────────────────────────
   let liveQuery = $state('');
+  let liveSearchEl = $state<HTMLInputElement | null>(null);
+  $effect(() => { if (liveSearchEl) liveSearchEl.focus(); });
   const liveResults = $derived(
     liveQuery.trim().length === 0
       ? groups
@@ -532,7 +534,7 @@
           class="flex-1 bg-transparent text-xl font-semibold placeholder-neutral-content/30 outline-none"
           placeholder="type a competency…"
           bind:value={liveQuery}
-          autofocus
+          bind:this={liveSearchEl}
         />
         <span class="text-xs text-neutral-content/40">or 1–{groups.length} for competency</span>
       </div>

@@ -104,11 +104,14 @@
             {/if}
           </div>
 
-          <div class="hidden sm:block" onclick={(e) => { e.stopPropagation(); popoverStoryId = popoverStoryId === story.id ? null : story.id; }}>
+          <div class="hidden sm:block">
             {#if mappings.length === 0}
               <span class="text-xs text-base-content/30 italic">— unmapped</span>
             {:else}
-              <button class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-dashed border-base-300 text-xs hover:bg-base-200 transition-colors">
+              <button
+                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-dashed border-base-300 text-xs hover:bg-base-200 transition-colors"
+                onclick={(e) => { e.stopPropagation(); popoverStoryId = popoverStoryId === story.id ? null : story.id; }}
+              >
                 {#if goToCount > 0}<span class="text-primary font-bold">★ {goToCount}</span>{/if}
                 {#if goToCount > 0 && backupCount > 0}<span class="text-base-content/40">·</span>{/if}
                 {#if backupCount > 0}<span class="text-base-content/50">{backupCount} backup{backupCount > 1 ? 's' : ''}</span>{/if}
@@ -116,6 +119,8 @@
               </button>
 
               {#if popoverStoryId === story.id}
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                   class="absolute z-10 mt-1 bg-base-100 border border-base-300 rounded-xl shadow-lg p-3 min-w-52"
                   onclick={(e) => e.stopPropagation()}

@@ -3,6 +3,7 @@
   import { storiesStore } from '../lib/stores/stories';
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { navigate, openJob } from '../lib/stores/view';
+  import { untrack } from 'svelte';
   import { verifyApiKey, extractCompetencies, GeminiError } from '../lib/gemini';
   import { exportData, parseBackup, applyImport, type BackupBundle } from '../lib/backup';
 
@@ -61,7 +62,7 @@
   // ── Step management ────────────────────────────────────────────────
   // Steps: 'key' | 'job-entry' | 'job-review'
   // addJobMode skips key entry; settings mode always shows key form first
-  let step = $state<'key' | 'job-entry' | 'job-review'>(addJobMode ? 'job-entry' : 'key');
+  let step = $state<'key' | 'job-entry' | 'job-review'>(untrack(() => addJobMode ? 'job-entry' : 'key'));
 
   // ── Step 1: API key ────────────────────────────────────────────────
   let apiKey = $state($settingsStore.apiKey ?? '');
