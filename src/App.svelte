@@ -9,7 +9,6 @@
   import Review from './views/Review.svelte';
   import StoryDetail from './views/StoryDetail.svelte';
   import JobHub from './views/JobHub.svelte';
-  import GapFill from './views/GapFill.svelte';
   import StoryBank from './views/StoryBank.svelte';
   import InterviewMode from './views/InterviewMode.svelte';
 
@@ -167,7 +166,7 @@
       {#if $currentView === 'job-hub' || $currentView === 'job-profile-detail'}
         <JobHub />
       {:else if $currentView === 'gap-fill'}
-        <GapFill />
+        <Capture />
       {:else if $currentView === 'story-bank' || $currentView === 'library'}
         <StoryBank />
       {:else if $currentView === 'capture'}
