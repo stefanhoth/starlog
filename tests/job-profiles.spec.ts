@@ -20,60 +20,67 @@ function mockGeminiCompetencies(page: import('@playwright/test').Page) {
   );
 }
 
-async function goToProfiles(page: import('@playwright/test').Page) {
+/** Navigate to job-hub with a clean slate (no profiles). */
+async function goToHub(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
-  await page.reload();
-  // Base mock for validation; individual tests add extraction mock after (LIFO takes priority)
+  await page.evaluate(() => {
+    localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+  });
   await mockGeminiCompetencies(page);
-  await page.getByTestId('api-key-input').fill('AIzaTestKey123');
-  await expect(page.getByTestId('verify-success')).toBeVisible({ timeout: 10000 });
-  await page.getByTestId('onboarding-submit').click();
-  await page.getByTestId('nav-job-profiles').click();
-  await expect(page.getByTestId('job-profiles-view')).toBeVisible();
+  await page.reload();
+  // Should be in job-hub showing the no-profile empty state
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
 }
 
 test('empty state shown with no profiles', async ({ page }) => {
-  await goToProfiles(page);
+  await goToHub(page);
   await expect(page.getByTestId('profiles-empty')).toBeVisible();
 });
 
-test('creating a profile shows competency chips', async ({ page }) => {
-  await goToProfiles(page);
-  await mockGeminiCompetencies(page);
-  await page.getByTestId('new-profile-btn').click();
+test('creating a profile shows competency list', async ({ page }) => {
+  await goToHub(page);
+  await page.getByTestId('nav-add-job').click();
   await page.getByTestId('profile-company').fill('Acme Corp');
   await page.getByTestId('profile-role').fill('Engineering Manager');
   await page.getByTestId('profile-jd').fill('We need a leader who can deliver under ambiguity...');
   await page.getByTestId('profile-submit').click();
-  await expect(page.getByTestId('job-profile-card')).toBeVisible({ timeout: 10000 });
-  await expect(page.getByText('Acme Corp')).toBeVisible();
-  await expect(page.getByText('Leadership')).toBeVisible();
+  // Extraction runs → job-review step shows extracted competencies
+  await expect(page.getByText('Leadership')).toBeVisible({ timeout: 10000 });
+  // Save to open job hub
+  await page.getByTestId('profile-save').click();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  await expect(page.getByTestId('job-hub-view').getByText('Acme Corp')).toBeVisible();
+  await expect(page.getByTestId('job-hub-view').getByText('Leadership')).toBeVisible();
 });
 
 test('created profile persists in localStorage', async ({ page }) => {
-  await goToProfiles(page);
-  await mockGeminiCompetencies(page);
-  await page.getByTestId('new-profile-btn').click();
+  await goToHub(page);
+  await page.getByTestId('nav-add-job').click();
   await page.getByTestId('profile-company').fill('TestCo');
   await page.getByTestId('profile-role').fill('Head of Engineering');
   await page.getByTestId('profile-jd').fill('Looking for a strong leader...');
   await page.getByTestId('profile-submit').click();
-  await expect(page.getByTestId('job-profile-card')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText('Leadership')).toBeVisible({ timeout: 10000 });
+  await page.getByTestId('profile-save').click();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
   const profiles = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_job_profiles') ?? '[]'));
   expect(profiles[0].company).toBe('TestCo');
   expect(profiles[0].extractedCompetencies).toContain('Leadership');
 });
 
-test('clicking profile card navigates to detail view', async ({ page }) => {
-  await goToProfiles(page);
-  await mockGeminiCompetencies(page);
-  await page.getByTestId('new-profile-btn').click();
+test('clicking job in sidebar navigates to its job hub', async ({ page }) => {
+  await goToHub(page);
+  await page.getByTestId('nav-add-job').click();
   await page.getByTestId('profile-company').fill('Acme');
   await page.getByTestId('profile-role').fill('EM');
   await page.getByTestId('profile-jd').fill('Job description here');
   await page.getByTestId('profile-submit').click();
-  await expect(page.getByTestId('job-profile-card')).toBeVisible({ timeout: 10000 });
-  await page.getByTestId('job-profile-card').click();
-  await expect(page.getByTestId('job-profile-detail-view')).toBeVisible();
+  await expect(page.getByText('Leadership')).toBeVisible({ timeout: 10000 });
+  await page.getByTestId('profile-save').click();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  // Sidebar shows a nav button for the profile; clicking it stays on job-hub
+  await page.getByRole('button', { name: /EM/ }).first().click();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  await expect(page.getByText('Leadership')).toBeVisible();
 });

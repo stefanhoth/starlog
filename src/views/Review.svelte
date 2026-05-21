@@ -1,8 +1,10 @@
 <script lang="ts">
   import { storiesStore } from '../lib/stores/stories';
+  import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { navigate } from '../lib/stores/view';
   import { COMPETENCIES } from '../lib/competencies';
   import type { StoryDraft } from '../lib/types';
+  import { get } from 'svelte/store';
 
   const QUALITY_ICON: Record<string, string> = { high: '🟢', medium: '🟡', low: '🔴' };
 
@@ -37,8 +39,11 @@
     tags = tags.includes(tag) ? tags.filter(t => t !== tag) : [...tags, tag];
   }
 
+  const gapProfile = sessionStorage.getItem('starlog_gap_profile') ?? '';
+  const gapComp = sessionStorage.getItem('starlog_gap_competency') ?? '';
+
   function save() {
-    storiesStore.addStory({
+    const story = storiesStore.addStory({
       title: title.trim() || 'Untitled Story',
       original_language: initial.original_language,
       competency_tags: tags,
@@ -46,12 +51,35 @@
       quality,
     });
     sessionStorage.removeItem('starlog_draft');
-    navigate('library');
+
+    // If this came from a gap-fill, auto-map the story to that competency
+    if (gapProfile && gapComp) {
+      const p = get(jobProfilesStore).find(x => x.id === gapProfile);
+      if (p) {
+        const existing = p.competencyMap[gapComp] ?? [];
+        if (!existing.includes(story.id)) {
+          jobProfilesStore.updateJobProfile(gapProfile, {
+            competencyMap: { ...p.competencyMap, [gapComp]: [story.id, ...existing] },
+          });
+        }
+      }
+      sessionStorage.removeItem('starlog_gap_profile');
+      sessionStorage.removeItem('starlog_gap_competency');
+      navigate('job-hub');
+    } else {
+      navigate('story-bank');
+    }
   }
 
   function discard() {
     sessionStorage.removeItem('starlog_draft');
-    navigate('capture');
+    if (gapProfile) {
+      sessionStorage.removeItem('starlog_gap_profile');
+      sessionStorage.removeItem('starlog_gap_competency');
+      navigate('gap-fill');
+    } else {
+      navigate('capture');
+    }
   }
 </script>
 

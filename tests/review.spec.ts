@@ -11,26 +11,17 @@ const FIXTURE = JSON.parse(
 async function goToReview(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
-  await page.reload();
-  // Setup + navigate to capture
-  // Mock before key fill so auto-validation succeeds; extraction mock below takes LIFO priority
+  // Seed consent + mock Gemini extraction before navigating
+  await page.evaluate(() => {
+    localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+  });
+  // Base mock for validation; extraction mock below takes LIFO priority
   await page.route('**/generativelanguage.googleapis.com/**', route =>
     route.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
   );
-  await page.getByTestId('api-key-input').fill('AIzaTestKey123');
-  await expect(page.getByTestId('verify-success')).toBeVisible({ timeout: 10000 });
-  await page.getByTestId('onboarding-submit').click();
-  // Seed the draft directly in sessionStorage and navigate to review
-  await page.evaluate((draft) => {
-    sessionStorage.setItem('starlog_draft', JSON.stringify(draft));
-  }, FIXTURE);
-  // Trigger navigation to review via store
-  await page.evaluate(() => {
-    // Dispatch a custom event to navigate — simpler than clicking through capture
-    (window as any).__starlogNavigate?.('review');
-  });
-  // Fallback: go through capture with mocked Gemini (takes LIFO priority over base mock)
+  await page.reload();
+  // Mock extraction to return the fixture
   await page.route('**/generativelanguage.googleapis.com/**', route =>
     route.fulfill({
       status: 200,
@@ -40,7 +31,10 @@ async function goToReview(page: import('@playwright/test').Page) {
       }),
     })
   );
-  await page.getByTestId('nav-capture').click();
+  // Navigate to capture via story bank
+  await page.getByTestId('nav-story-bank').click();
+  await page.getByRole('button', { name: '+ New Story' }).click();
+  await expect(page.getByTestId('capture-view')).toBeVisible();
   await page.getByTestId('tab-text').click();
   await page.getByTestId('text-input').fill('test story');
   await page.getByTestId('text-submit').click();

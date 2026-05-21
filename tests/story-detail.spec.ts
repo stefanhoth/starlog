@@ -20,21 +20,20 @@ function makeStory(overrides: Partial<Story> = {}): Story {
 async function openDetail(page: import('@playwright/test').Page, story: Story) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
-  await page.reload();
   await page.route('**/generativelanguage.googleapis.com/**', route =>
     route.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
   );
-  await page.getByTestId('api-key-input').fill('AIzaTestKey123');
-  await expect(page.getByTestId('verify-success')).toBeVisible({ timeout: 10000 });
-  await page.getByTestId('onboarding-submit').click();
   await page.evaluate((s) => {
+    localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
     localStorage.setItem('starlog_stories', JSON.stringify([s]));
     sessionStorage.setItem('starlog_active_story', s.id);
   }, story);
   await page.reload();
-  // Navigate to story-detail view via library card click
-  await page.getByTestId('story-card').first().click();
+  // Navigate to story bank and click the story row
+  await page.getByTestId('nav-story-bank').click();
+  await expect(page.getByTestId('story-bank-view')).toBeVisible();
+  await page.getByTestId('story-row').first().click();
   await expect(page.getByTestId('story-detail-view')).toBeVisible({ timeout: 5000 });
 }
 
@@ -51,7 +50,8 @@ test('editing result and saving persists on reload', async ({ page }) => {
   await page.getByTestId('detail-result').fill('New result text');
   await page.getByTestId('save-btn').click();
   await page.reload();
-  await page.getByTestId('story-card').first().click();
+  await page.getByTestId('nav-story-bank').click();
+  await page.getByTestId('story-row').first().click();
   await expect(page.getByTestId('detail-result')).toHaveValue('New result text');
 });
 
@@ -73,11 +73,11 @@ test('delete shows modal, cancel keeps story', async ({ page }) => {
   expect(stories).toHaveLength(1);
 });
 
-test('delete confirm removes story and returns to library', async ({ page }) => {
+test('delete confirm removes story and returns to story bank', async ({ page }) => {
   await openDetail(page, makeStory());
   await page.getByTestId('delete-btn').click();
   await page.getByTestId('delete-confirm').click();
-  await expect(page.getByTestId('library-view')).toBeVisible();
+  await expect(page.getByTestId('story-bank-view')).toBeVisible();
   const stories = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_stories') ?? '[]'));
   expect(stories).toHaveLength(0);
 });

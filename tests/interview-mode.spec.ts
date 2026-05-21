@@ -53,36 +53,38 @@ async function seedAndOpenInterview(
 ) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
-  await page.reload();
   await page.route('**/generativelanguage.googleapis.com/**', route =>
     route.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
   );
-  await page.getByTestId('api-key-input').fill('AIzaTestKey123');
-  await expect(page.getByTestId('verify-success')).toBeVisible({ timeout: 10000 });
-  await page.getByTestId('onboarding-submit').click();
   await page.evaluate(
-    ({ s, p, m }) => {
+    ({ s, p }) => {
+      localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
       localStorage.setItem('starlog_stories', JSON.stringify(s));
       if (p) {
         localStorage.setItem('starlog_job_profiles', JSON.stringify([p]));
         sessionStorage.setItem('starlog_active_profile', p.id);
       }
-      sessionStorage.setItem('starlog_interview_mode', m);
     },
-    { s: stories, p: profile ?? null, m: mode }
+    { s: stories, p: profile ?? null }
   );
-  // Reload so Svelte stores pick up the seeded localStorage/sessionStorage
   await page.reload();
+
   if (mode === 'library') {
-    // Already on library after reload (consentGiven=true redirects there)
+    // Navigate to story bank and click the review button
+    await page.getByTestId('nav-story-bank').click();
+    await expect(page.getByTestId('story-bank-view')).toBeVisible();
     await page.getByTestId('interview-btn').click();
+    // Library mode sets submode=read directly → interview view in read mode
   } else {
-    await page.getByTestId('nav-job-profiles').click();
-    await page.getByTestId('job-profile-card').click();
-    await expect(page.getByTestId('job-profile-detail-view')).toBeVisible();
-    await page.getByTestId('profile-interview-btn').click();
+    // Navigate to job-hub (auto-selects seeded profile) and start interview
+    await expect(page.getByTestId('job-hub-view')).toBeVisible();
+    await page.getByTestId('start-interview-btn').click();
+    // Profile mode opens launch pad first; select Flash cards (read submode)
+    await expect(page.getByTestId('interview-view')).toBeVisible();
+    await page.getByTestId('mode-read').click();
   }
+
   await expect(page.getByTestId('interview-view')).toBeVisible();
 }
 
@@ -134,21 +136,21 @@ test('library entry: arrow keys navigate between stories', async ({ page }) => {
   await expect(page.getByTestId('interview-story-title')).toHaveText('Story Two');
 });
 
-test('library entry: ESC exits to library view', async ({ page }) => {
+test('library entry: ESC exits to story bank', async ({ page }) => {
   const story = makeStory();
   await seedAndOpenInterview(page, { stories: [story], mode: 'library' });
 
   await expect(page.getByTestId('interview-view')).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(page.getByTestId('library-view')).toBeVisible();
+  await expect(page.getByTestId('story-bank-view')).toBeVisible();
 });
 
-test('library entry: exit button returns to library', async ({ page }) => {
+test('library entry: exit button returns to story bank', async ({ page }) => {
   const story = makeStory();
   await seedAndOpenInterview(page, { stories: [story], mode: 'library' });
 
   await page.getByTestId('exit-btn').click();
-  await expect(page.getByTestId('library-view')).toBeVisible();
+  await expect(page.getByTestId('story-bank-view')).toBeVisible();
 });
 
 // ─── Profile mode ─────────────────────────────────────────────────────────────
@@ -199,11 +201,11 @@ test('profile entry: competencies with no mapped stories are skipped', async ({ 
   await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[2]);
 });
 
-test('profile entry: ESC exits to job-profile-detail', async ({ page }) => {
+test('profile entry: ESC exits to job hub', async ({ page }) => {
   const story = makeStory({ id: 'story-1' });
   const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['story-1'] });
   await seedAndOpenInterview(page, { stories: [story], profile, mode: 'profile' });
 
   await page.keyboard.press('Escape');
-  await expect(page.getByTestId('job-profile-detail-view')).toBeVisible();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
 });

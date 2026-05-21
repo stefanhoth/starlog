@@ -40,8 +40,11 @@ async function setupWithKey(page: import('@playwright/test').Page) {
   await page.getByTestId('api-key-input').fill('AIzaTestKey123');
   await expect(page.getByTestId('verify-success')).toBeVisible({ timeout: 10000 });
   await page.getByTestId('onboarding-submit').click();
-  // Navigate to capture
-  await page.getByTestId('nav-capture').click();
+  // After key submit with no profiles, we land in job-entry step (sidebar visible).
+  // Navigate to capture via story bank.
+  await page.getByTestId('nav-story-bank').click();
+  await page.getByRole('button', { name: '+ New Story' }).click();
+  await expect(page.getByTestId('capture-view')).toBeVisible();
 }
 
 test('three tabs are visible', async ({ page }) => {

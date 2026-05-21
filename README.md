@@ -12,14 +12,13 @@ Everything stays in your browser. No account, no server, no data leaving your ma
 
 ## Features
 
+- **Job-first navigation** — each job you're interviewing for lives in the sidebar. The active job's hub shows coverage at a glance.
+- **Job hub** — paste a job description; Gemini extracts the 5–7 behavioural competencies the role is likely to interview on. See which are covered, which are gaps, and map existing stories to any competency in one click.
+- **Gap fill** — click **+ draft** on any uncovered competency to launch a focused capture flow pre-tagged with that competency. Gemini extracts and maps the story automatically on save.
 - **Capture your way** — record audio directly in the browser, upload an existing file, or paste a transcript. Gemini extracts a structured STAR story from any of them.
-- **Library** — searchable, filterable card grid of all your stories. Tag by competency, rank by strength.
+- **Story bank** — searchable table of all your stories. Text search covers title, competency tags, situation, and result. Click any row to open the editor.
 - **Story editor** — edit any STAR field inline, manage action steps, add private notes.
-- **Job Profiles** — paste a job description and Gemini extracts the 5–7 behavioural competencies the role is likely to interview on.
-- **Coverage matrix** — see which competencies you have stories for and which are gaps. Map any story to any competency in one click.
-- **Re-extract** — update a job description and reconcile stories that were mapped to competencies that no longer exist.
-- **Interview mode** — full-screen flashcard view. Browse all stories or drill by job profile / competency group. Keyboard-navigable (← → ↑ ↓ ESC). Two-line action crib visible by default; tap to expand the full STAR.
-- **Print cheat sheet** — one keystroke generates a clean print layout with one competency per page.
+- **Interview mode** — full-screen prep view with a launch pad offering three modes: **Flash cards** (keyboard-navigable card deck, ← → between stories, ↑ ↓ between competency groups), **Mock interview** (question-first, space to reveal), and **Drill with timer** (90 s target, 1–5 self-rating). Two-line action crib visible by default; click/space to expand the full STAR.
 - **API key validation** — live ping on the key you enter; Save is disabled until the key is confirmed working.
 
 ---
@@ -91,14 +90,22 @@ Test fixtures live in `tests/fixtures/`. Gemini responses are mocked — no real
 ```
 src/
   lib/
-    components/     # StoryCard, StoryPicker, JobProfileCard
+    components/     # StoryPicker (multi-select modal), StoryCard, JobProfileCard
     stores/         # stories, jobProfiles, settings, view (localStorage-backed)
     gemini.ts       # extractSTAR, extractCompetencies, verifyApiKey
     audio.ts        # AudioRecorder (MediaRecorder wrapper)
     competencies.ts # preset competency tag list
     types.ts        # Story, JobProfile, Settings, StoryDraft
-  views/            # one file per screen
-  App.svelte        # layout shell + view router
+  views/
+    App.svelte        # layout shell + view router (job-first sidebar)
+    Onboarding.svelte # key setup → add-first-job → review competencies
+    JobHub.svelte     # per-job competency coverage + map/draft actions
+    GapFill.svelte    # focused capture flow for a specific competency gap
+    StoryBank.svelte  # full story table with text search
+    Capture.svelte    # record / upload / text → Gemini → Review
+    Review.svelte     # edit & save extracted STAR draft
+    StoryDetail.svelte # inline STAR editor, rank, tags, delete
+    InterviewMode.svelte # full-screen prep: flash cards / mock / timer modes
 tests/
   fixtures/         # star-draft.json, competencies.json
   helpers.ts        # shared Gemini mock helper
