@@ -212,6 +212,7 @@
     aria-modal="true"
     tabindex="-1"
     onkeydown={(e) => e.key === 'Escape' && (mapComp = null)}
+    onclick={(e) => e.target === e.currentTarget && (mapComp = null)}
   >
     <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-5 flex flex-col gap-4">
       <div>
