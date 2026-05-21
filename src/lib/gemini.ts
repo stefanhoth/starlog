@@ -164,3 +164,23 @@ export async function extractCompetencies(jobDescription: string): Promise<strin
     return parseJson<string[]>(result.response.text());
   });
 }
+
+export async function generateInspirationQuestions(competency: string): Promise<string[]> {
+  const model = getModel();
+
+  const prompt = `You are helping a professional prepare for job interviews using the STAR method.
+Generate exactly 3 open-ended questions that will help them recall a specific work experience
+demonstrating the competency: "${competency}".
+
+Questions should:
+- Be concrete and memory-triggering ("Tell me about a time when...")
+- Vary in angle (team, individual, crisis, growth)
+- Not repeat each other
+
+Respond with a JSON array of exactly 3 strings. No markdown, no extra keys.`;
+
+  return withRetry(async () => {
+    const result = await model.generateContent([{ text: prompt }]);
+    return parseJson<string[]>(result.response.text());
+  });
+}
