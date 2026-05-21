@@ -4,11 +4,46 @@
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { navigate, openJob } from '../lib/stores/view';
   import { verifyApiKey, extractCompetencies, GeminiError } from '../lib/gemini';
+  import { exportData, parseBackup, applyImport, type BackupBundle } from '../lib/backup';
 
   // addJobMode: skip key step and go straight to job entry (for sidebar "+ add job")
   let { addJobMode = false }: { addJobMode?: boolean } = $props();
 
   const isSettings = $derived($settingsStore.consentGiven);
+
+  // ── Backup / restore ───────────────────────────────────────────────
+  let importBundle = $state<BackupBundle | null>(null);
+  let importError = $state('');
+  let importConfirming = $state(false);
+
+  async function handleImportFile(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    importError = '';
+    importBundle = null;
+    importConfirming = false;
+    try {
+      importBundle = await parseBackup(file);
+      importConfirming = true;
+    } catch (err) {
+      importError = err instanceof Error ? err.message : 'Could not read file.';
+    }
+    (e.target as HTMLInputElement).value = '';
+  }
+
+  function confirmImport() {
+    if (!importBundle) return;
+    applyImport(importBundle);
+    importBundle = null;
+    importConfirming = false;
+    navigate('job-hub');
+  }
+
+  function cancelImport() {
+    importBundle = null;
+    importConfirming = false;
+    importError = '';
+  }
 
   // ── Danger Zone ────────────────────────────────────────────────────
   let showClearConfirm = $state(false);
@@ -196,6 +231,61 @@
         <button class="btn btn-ghost w-full text-base-content/50" onclick={() => navigate('job-hub')}>
           Cancel
         </button>
+      </div>
+
+      <!-- Data: backup & restore -->
+      <div class="border-t border-base-300 pt-5 flex flex-col gap-3" data-testid="data-section">
+        <p class="text-xs font-semibold uppercase tracking-widest text-base-content/50">Data</p>
+
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium">Download backup</p>
+            <p class="text-xs text-base-content/50 mt-0.5">{storyCount} {storyCount === 1 ? 'story' : 'stories'} · {profileCount} job {profileCount === 1 ? 'profile' : 'profiles'}</p>
+          </div>
+          <button
+            class="btn btn-outline btn-sm shrink-0"
+            onclick={exportData}
+            data-testid="export-btn"
+          >
+            ↓ Download
+          </button>
+        </div>
+
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium">Restore from backup</p>
+            <p class="text-xs text-base-content/50 mt-0.5">Replaces all current data.</p>
+          </div>
+          <label class="btn btn-outline btn-sm shrink-0 cursor-pointer" data-testid="import-label">
+            ↑ Restore
+            <input
+              type="file"
+              accept=".json,.starlog.json"
+              class="hidden"
+              onchange={handleImportFile}
+              data-testid="import-input"
+            />
+          </label>
+        </div>
+
+        {#if importError}
+          <p class="text-error text-xs" data-testid="import-error">{importError}</p>
+        {/if}
+
+        {#if importConfirming && importBundle}
+          <div class="bg-warning/10 border border-warning/30 rounded-xl p-4 flex flex-col gap-3" data-testid="import-confirm">
+            <p class="text-sm">
+              This backup contains <strong>{importBundle.stories.length} {importBundle.stories.length === 1 ? 'story' : 'stories'}</strong>
+              and <strong>{importBundle.jobProfiles.length} job {importBundle.jobProfiles.length === 1 ? 'profile' : 'profiles'}</strong>,
+              exported on {new Date(importBundle.exportedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}.
+              Importing will replace your current {storyCount} {storyCount === 1 ? 'story' : 'stories'} and {profileCount} job {profileCount === 1 ? 'profile' : 'profiles'}.
+            </p>
+            <div class="flex gap-2">
+              <button class="btn btn-warning btn-sm" onclick={confirmImport} data-testid="import-confirm-btn">Confirm import</button>
+              <button class="btn btn-ghost btn-sm" onclick={cancelImport} data-testid="import-cancel-btn">Cancel</button>
+            </div>
+          </div>
+        {/if}
       </div>
 
       <!-- Danger Zone -->
