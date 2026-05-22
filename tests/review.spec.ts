@@ -51,6 +51,8 @@ test('review shows all STAR sections', async ({ page }) => {
 
 test('editing situation persists on save', async ({ page }) => {
   await goToReview(page);
+  // Click the read-mode button to enter edit mode, then fill the textarea
+  await page.getByTestId('section-situation').click();
   await page.getByTestId('section-situation').fill('New situation text');
   await page.getByTestId('save-story').click();
   // Verify saved to localStorage with our edited situation
