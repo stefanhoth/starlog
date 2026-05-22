@@ -48,7 +48,7 @@
           🎤 Review
         </button>
       {/if}
-      <button class="btn btn-primary btn-sm" onclick={() => navigate('capture')}>+ New Story</button>
+      <button class="btn btn-primary btn-sm" onclick={() => { sessionStorage.removeItem('starlog_gap_profile'); sessionStorage.removeItem('starlog_gap_competency'); navigate('capture'); }}>+ New Story</button>
     </div>
   </div>
 
@@ -66,7 +66,7 @@
     <div class="flex flex-col items-center justify-center gap-4 py-24 text-base-content/40" data-testid="empty-state">
       <span class="text-5xl">📚</span>
       <p class="text-lg font-medium">No stories yet</p>
-      <button class="btn btn-primary" onclick={() => navigate('capture')}>Capture your first story</button>
+      <button class="btn btn-primary" onclick={() => { sessionStorage.removeItem('starlog_gap_profile'); sessionStorage.removeItem('starlog_gap_competency'); navigate('capture'); }}>Capture your first story</button>
     </div>
   {:else}
     <div class="border border-base-300 rounded-xl overflow-hidden bg-base-100">
