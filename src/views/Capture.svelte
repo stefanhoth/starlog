@@ -178,7 +178,7 @@
 <div class="p-6 max-w-2xl mx-auto" data-testid="{isGapMode ? 'gap-fill-view' : 'capture-view'}">
 
   {#if isGapMode}
-    <!-- Gap-fill mode header -->
+    <!-- Gap-fill: breadcrumb + title above tabs -->
     <div class="flex items-center gap-1.5 text-sm text-base-content/50 mb-5">
       <button class="hover:text-base-content transition-colors" onclick={() => navigate('job-hub')}>
         ← {gapFillProfile ? `${gapFillProfile.role} · ${gapFillProfile.company}` : 'Job Hub'}
@@ -186,79 +186,12 @@
       <span>›</span>
       <span>filling gap</span>
     </div>
-
-    <h1 class="text-2xl font-bold mb-2">Drafting for: <span class="text-primary">{gapFillComp}</span></h1>
-
-    <!-- Context banner -->
-    <div class="bg-base-200 border border-base-300 rounded-xl px-4 py-3 mb-4">
-      <p class="text-xs font-semibold uppercase tracking-widest text-base-content/40 mb-1">The kind of question you'll hear</p>
-      <p class="text-sm font-medium">"{`Tell me about a time you demonstrated ${gapFillComp.toLowerCase()}.`}"</p>
-      <p class="text-xs text-base-content/40 mt-1">Speak freely — tell the story as it happened. AI will structure it for you.</p>
-    </div>
-
-    <!-- Unified question pager (gap mode: competency fixed) -->
-    {#if questions.length > 0}
-      <div class="mb-4">
-        <div class="bg-base-200 rounded-lg px-3 py-2.5 flex flex-col gap-2" data-testid="ai-questions">
-          <div class="flex items-start gap-2">
-            <span class="text-primary shrink-0 mt-0.5">▸</span>
-            <p class="text-sm text-slate-600 italic flex-1">"{questions[questionIndex]}"</p>
-            {#if isAI}<span class="badge badge-xs badge-primary shrink-0 self-start mt-0.5">✨ AI</span>{/if}
-          </div>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1">
-              <button
-                class="btn btn-xs btn-ghost"
-                onclick={() => questionIndex = (questionIndex - 1 + questions.length) % questions.length}
-                aria-label="Previous question"
-                data-testid="ai-prev-btn"
-              >◀</button>
-              <span class="text-xs text-base-content/40" data-testid="ai-counter">{questionIndex + 1} / {questions.length}</span>
-              <button
-                class="btn btn-xs btn-ghost"
-                onclick={() => questionIndex = (questionIndex + 1) % questions.length}
-                aria-label="Next question"
-                data-testid="ai-next-btn"
-              >▶</button>
-            </div>
-          </div>
-        </div>
-        <div class="mt-2 flex flex-col gap-1">
-          {#if !isAI}
-            <button
-              class="btn btn-sm btn-outline btn-primary w-full"
-              onclick={generateQuestions}
-              disabled={loading || isGenerating}
-              data-testid="generate-questions-btn"
-            >
-              {#if isGenerating}
-                <span class="loading loading-spinner loading-xs"></span> Generating…
-              {:else}
-                ✨ Generate questions
-              {/if}
-            </button>
-          {:else}
-            <button
-              class="btn btn-xs btn-ghost text-base-content/50 w-full"
-              onclick={generateQuestions}
-              disabled={loading || isGenerating}
-              data-testid="regenerate-btn"
-            >
-              {#if isGenerating}<span class="loading loading-spinner loading-xs"></span>{:else}↺ Regenerate{/if}
-            </button>
-          {/if}
-          {#if genError}
-            <p class="text-error text-xs" data-testid="ai-error">{genError}</p>
-          {/if}
-        </div>
-      </div>
-    {/if}
-
+    <h1 class="text-2xl font-bold mb-6">Drafting for: <span class="text-primary">{gapFillComp}</span></h1>
   {:else}
-    <!-- Normal capture mode header -->
     <h1 class="text-2xl font-bold mb-6">Capture a Story</h1>
   {/if}
 
+  <!-- ── Capture tabs (always first) ──────────────────────────────────── -->
   <div role="tablist" class="tabs tabs-boxed mb-6">
     <button role="tab" class="tab {tab === 'record' ? 'tab-active' : ''}" onclick={() => tab = 'record'} data-testid="tab-record">
       🎙️ Record
@@ -351,8 +284,74 @@
     </div>
   {/if}
 
-  {#if !isGapMode}
-    <!-- Inspiration section — below the capture area -->
+  <!-- ── Inspiration / context section — always below capture area ────── -->
+  {#if isGapMode}
+    <!-- Gap-fill: context banner + question pager -->
+    <div class="border-t border-base-300 pt-4 mt-6" data-testid="inspiration-section">
+      <div class="mb-4">
+        <p class="text-xs font-semibold uppercase tracking-widest text-base-content/40 mb-1">The kind of question you'll hear</p>
+        <p class="text-sm text-base-content/60">Speak freely — tell the story as it happened. AI will structure it for you.</p>
+      </div>
+
+      {#if questions.length > 0}
+        <!-- Speech-bubble question card -->
+        <div class="rounded-2xl bg-base-100 border border-base-300 shadow-md px-6 py-5 mb-3" data-testid="ai-questions">
+          <div class="text-4xl text-primary/20 leading-none font-serif select-none">"</div>
+          <p class="text-base font-medium text-base-content leading-relaxed -mt-1 mb-1">{questions[questionIndex]}</p>
+          <div class="text-4xl text-primary/20 leading-none font-serif select-none text-right -mt-3">"</div>
+          <div class="flex items-center justify-between pt-3 mt-1 border-t border-base-200">
+            <div class="flex items-center gap-1">
+              <button
+                class="btn btn-xs btn-ghost"
+                onclick={() => questionIndex = (questionIndex - 1 + questions.length) % questions.length}
+                aria-label="Previous question"
+                data-testid="ai-prev-btn"
+              >◀</button>
+              <span class="text-xs text-base-content/40" data-testid="ai-counter">{questionIndex + 1} / {questions.length}</span>
+              <button
+                class="btn btn-xs btn-ghost"
+                onclick={() => questionIndex = (questionIndex + 1) % questions.length}
+                aria-label="Next question"
+                data-testid="ai-next-btn"
+              >▶</button>
+            </div>
+            {#if isAI}<span class="badge badge-sm badge-primary">✨ AI</span>{/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          {#if !isAI}
+            <button
+              class="btn btn-sm btn-outline btn-primary w-full"
+              onclick={generateQuestions}
+              disabled={loading || isGenerating}
+              data-testid="generate-questions-btn"
+            >
+              {#if isGenerating}
+                <span class="loading loading-spinner loading-xs"></span> Generating…
+              {:else}
+                ✨ Generate questions
+              {/if}
+            </button>
+          {:else}
+            <button
+              class="btn btn-xs btn-ghost text-base-content/50 w-full"
+              onclick={generateQuestions}
+              disabled={loading || isGenerating}
+              data-testid="regenerate-btn"
+            >
+              {#if isGenerating}<span class="loading loading-spinner loading-xs"></span>{:else}↺ Regenerate{/if}
+            </button>
+          {/if}
+          {#if genError}
+            <p class="text-error text-xs" data-testid="ai-error">{genError}</p>
+          {/if}
+        </div>
+      {/if}
+    </div>
+
+  {:else}
+    <!-- Normal mode: collapsible inspiration section -->
     <div class="border-t border-base-300 pt-4 mt-6" data-testid="inspiration-section">
       <button
         class="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700 w-full text-left mb-2 transition-colors"
@@ -365,7 +364,7 @@
       </button>
 
       {#if inspirationOpen}
-        <div class="flex flex-wrap gap-1.5 mb-3 mt-1">
+        <div class="flex flex-wrap gap-1.5 mb-4 mt-1">
           {#each COMPETENCIES as c}
             <button
               class="badge badge-sm cursor-pointer {activeCompetency === c ? 'badge-primary' : 'badge-ghost'}"
@@ -376,14 +375,12 @@
         </div>
 
         {#if activeCompetency && questions.length > 0}
-          <!-- Unified pager -->
-          <div class="bg-base-200 rounded-lg px-3 py-2.5 flex flex-col gap-2" data-testid="ai-questions">
-            <div class="flex items-start gap-2">
-              <span class="text-primary shrink-0 mt-0.5">▸</span>
-              <p class="text-sm text-slate-600 italic flex-1">"{questions[questionIndex]}"</p>
-              {#if isAI}<span class="badge badge-xs badge-primary shrink-0 self-start mt-0.5">✨ AI</span>{/if}
-            </div>
-            <div class="flex items-center justify-between">
+          <!-- Speech-bubble question card -->
+          <div class="rounded-2xl bg-base-100 border border-base-300 shadow-md px-6 py-5 mb-3" data-testid="ai-questions">
+            <div class="text-4xl text-primary/20 leading-none font-serif select-none">"</div>
+            <p class="text-base font-medium text-base-content leading-relaxed -mt-1 mb-1">{questions[questionIndex]}</p>
+            <div class="text-4xl text-primary/20 leading-none font-serif select-none text-right -mt-3">"</div>
+            <div class="flex items-center justify-between pt-3 mt-1 border-t border-base-200">
               <div class="flex items-center gap-1">
                 <button
                   class="btn btn-xs btn-ghost"
@@ -399,10 +396,11 @@
                   data-testid="ai-next-btn"
                 >▶</button>
               </div>
+              {#if isAI}<span class="badge badge-sm badge-primary">✨ AI</span>{/if}
             </div>
           </div>
 
-          <div class="mt-2 flex flex-col gap-1">
+          <div class="flex flex-col gap-1">
             {#if !isAI}
               <button
                 class="btn btn-sm btn-outline btn-primary w-full"
