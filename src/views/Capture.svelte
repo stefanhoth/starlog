@@ -24,35 +24,6 @@
   let inspirationOpen = $state(true);
   let _selectedCompetency = $state<string | null>(null);
 
-  // AI-generated questions
-  let aiQuestions = $state<string[]>([]);
-  let aiLoading = $state(false);
-  let aiError = $state('');
-  let aiIndex = $state(0);
-
-  // Reset AI questions when the active competency changes
-  $effect(() => {
-    activeCompetency; // track
-    aiQuestions = [];
-    aiError = '';
-    aiIndex = 0;
-  });
-
-  async function generateQuestions() {
-    if (!activeCompetency) return;
-    aiLoading = true;
-    aiError = '';
-    aiQuestions = [];
-    aiIndex = 0;
-    try {
-      aiQuestions = await generateInspirationQuestions(activeCompetency);
-    } catch (err) {
-      aiError = err instanceof GeminiError ? err.message : 'Failed to generate questions. Try again.';
-    } finally {
-      aiLoading = false;
-    }
-  }
-
   // Gap-aware default for normal mode: first unmapped competency across all profiles
   const gapCompetency = $derived.by<string | null>(() => {
     if (isGapMode) return null;
@@ -67,6 +38,43 @@
   const activeCompetency = $derived(
     isGapMode ? gapFillComp : (_selectedCompetency ?? gapCompetency)
   );
+
+  // Unified questions state
+  let generatedQuestions = $state<string[]>([]);
+  let isGenerating = $state(false);
+  let genError = $state('');
+  let questionIndex = $state(0);
+
+  // Single source of truth: AI questions take over when available
+  const questions = $derived(
+    generatedQuestions.length > 0
+      ? generatedQuestions
+      : (PROMPTS[activeCompetency as keyof typeof PROMPTS] ?? [])
+  );
+  const isAI = $derived(generatedQuestions.length > 0);
+
+  // Reset when competency changes
+  $effect(() => {
+    activeCompetency; // track
+    generatedQuestions = [];
+    genError = '';
+    questionIndex = 0;
+  });
+
+  async function generateQuestions() {
+    if (!activeCompetency) return;
+    isGenerating = true;
+    genError = '';
+    try {
+      const newQs = await generateInspirationQuestions(activeCompetency);
+      generatedQuestions = newQs;
+      questionIndex = 0;
+    } catch (err) {
+      genError = err instanceof GeminiError ? err.message : 'Failed to generate questions. Try again.';
+    } finally {
+      isGenerating = false;
+    }
+  }
 
   // Shared state
   let loading = $state(false);
@@ -188,148 +196,67 @@
       <p class="text-xs text-base-content/40 mt-1">Speak freely — tell the story as it happened. AI will structure it for you.</p>
     </div>
 
-    <!-- AI-generated questions (gap mode: competency is fixed) -->
-    <div class="mb-6 flex flex-col gap-2">
-      {#if aiQuestions.length === 0}
-        <button
-          class="btn btn-sm btn-outline btn-primary w-full"
-          onclick={generateQuestions}
-          disabled={loading || aiLoading}
-          data-testid="generate-questions-btn"
-        >
-          {#if aiLoading}
-            <span class="loading loading-spinner loading-xs"></span> Generating…
-          {:else}
-            ✨ Generate questions
-          {/if}
-        </button>
-      {:else}
-        <div class="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 flex flex-col gap-3" data-testid="ai-questions">
-          <p class="text-sm text-slate-700 italic">"{aiQuestions[aiIndex]}"</p>
-          <div class="flex items-center justify-between gap-2">
+    <!-- Unified question pager (gap mode: competency fixed) -->
+    {#if questions.length > 0}
+      <div class="mb-4">
+        <div class="bg-base-200 rounded-lg px-3 py-2.5 flex flex-col gap-2" data-testid="ai-questions">
+          <div class="flex items-start gap-2">
+            <span class="text-primary shrink-0 mt-0.5">▸</span>
+            <p class="text-sm text-slate-600 italic flex-1">"{questions[questionIndex]}"</p>
+            {#if isAI}<span class="badge badge-xs badge-primary shrink-0 self-start mt-0.5">✨ AI</span>{/if}
+          </div>
+          <div class="flex items-center justify-between">
             <div class="flex items-center gap-1">
               <button
                 class="btn btn-xs btn-ghost"
-                onclick={() => aiIndex = (aiIndex - 1 + aiQuestions.length) % aiQuestions.length}
+                onclick={() => questionIndex = (questionIndex - 1 + questions.length) % questions.length}
                 aria-label="Previous question"
                 data-testid="ai-prev-btn"
               >◀</button>
-              <span class="text-xs text-slate-400" data-testid="ai-counter">{aiIndex + 1} / {aiQuestions.length}</span>
+              <span class="text-xs text-base-content/40" data-testid="ai-counter">{questionIndex + 1} / {questions.length}</span>
               <button
                 class="btn btn-xs btn-ghost"
-                onclick={() => aiIndex = (aiIndex + 1) % aiQuestions.length}
+                onclick={() => questionIndex = (questionIndex + 1) % questions.length}
                 aria-label="Next question"
                 data-testid="ai-next-btn"
               >▶</button>
             </div>
-            <button
-              class="btn btn-xs btn-ghost text-base-content/50"
-              onclick={generateQuestions}
-              disabled={loading || aiLoading}
-              data-testid="regenerate-btn"
-            >
-              {#if aiLoading}<span class="loading loading-spinner loading-xs"></span>{:else}↺ Regenerate{/if}
-            </button>
           </div>
         </div>
-      {/if}
-      {#if aiError}
-        <p class="text-error text-xs" data-testid="ai-error">{aiError}</p>
-      {/if}
-    </div>
+        <div class="mt-2 flex flex-col gap-1">
+          {#if !isAI}
+            <button
+              class="btn btn-sm btn-outline btn-primary w-full"
+              onclick={generateQuestions}
+              disabled={loading || isGenerating}
+              data-testid="generate-questions-btn"
+            >
+              {#if isGenerating}
+                <span class="loading loading-spinner loading-xs"></span> Generating…
+              {:else}
+                ✨ Generate questions
+              {/if}
+            </button>
+          {:else}
+            <button
+              class="btn btn-xs btn-ghost text-base-content/50 w-full"
+              onclick={generateQuestions}
+              disabled={loading || isGenerating}
+              data-testid="regenerate-btn"
+            >
+              {#if isGenerating}<span class="loading loading-spinner loading-xs"></span>{:else}↺ Regenerate{/if}
+            </button>
+          {/if}
+          {#if genError}
+            <p class="text-error text-xs" data-testid="ai-error">{genError}</p>
+          {/if}
+        </div>
+      </div>
+    {/if}
 
   {:else}
     <!-- Normal capture mode header -->
     <h1 class="text-2xl font-bold mb-6">Capture a Story</h1>
-
-    <!-- Inspiration section -->
-    <div class="mb-6" data-testid="inspiration-section">
-      <button
-        class="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700 w-full text-left mb-2 transition-colors"
-        onclick={() => inspirationOpen = !inspirationOpen}
-        data-testid="inspiration-toggle"
-        aria-expanded={inspirationOpen}
-      >
-        <span class="text-xs">{inspirationOpen ? '▾' : '▸'}</span>
-        💡 Need inspiration? {gapCompetency && !inspirationOpen ? `· ${gapCompetency} needs a story` : ''}
-      </button>
-
-      {#if inspirationOpen}
-        <div class="flex flex-wrap gap-1.5 mb-3">
-          {#each COMPETENCIES as c}
-            <button
-              class="badge badge-sm cursor-pointer {activeCompetency === c ? 'badge-primary' : 'badge-ghost'}"
-              onclick={() => _selectedCompetency = _selectedCompetency === c ? null : c}
-              data-testid="inspiration-tag-{c.toLowerCase().replace(/\W+/g, '-')}"
-            >{c}</button>
-          {/each}
-        </div>
-
-        {#if activeCompetency}
-          <ul class="space-y-2" data-testid="inspiration-prompts">
-            {#each PROMPTS[activeCompetency as keyof typeof PROMPTS] ?? [] as prompt}
-              <li class="text-sm text-slate-600 flex gap-2 items-start bg-base-200 rounded-lg px-3 py-2.5">
-                <span class="text-primary shrink-0 mt-0.5">▸</span>
-                <span class="italic">"{prompt}"</span>
-              </li>
-            {/each}
-          </ul>
-
-          <!-- AI-generated questions -->
-          <div class="mt-3 flex flex-col gap-2">
-            {#if aiQuestions.length === 0}
-              <button
-                class="btn btn-sm btn-outline btn-primary w-full"
-                onclick={generateQuestions}
-                disabled={loading || aiLoading}
-                data-testid="generate-questions-btn"
-              >
-                {#if aiLoading}
-                  <span class="loading loading-spinner loading-xs"></span> Generating…
-                {:else}
-                  ✨ Generate questions
-                {/if}
-              </button>
-            {:else}
-              <div class="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 flex flex-col gap-3" data-testid="ai-questions">
-                <p class="text-sm text-slate-700 italic">"{aiQuestions[aiIndex]}"</p>
-                <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-1">
-                    <button
-                      class="btn btn-xs btn-ghost"
-                      onclick={() => aiIndex = (aiIndex - 1 + aiQuestions.length) % aiQuestions.length}
-                      aria-label="Previous question"
-                      data-testid="ai-prev-btn"
-                    >◀</button>
-                    <span class="text-xs text-slate-400" data-testid="ai-counter">{aiIndex + 1} / {aiQuestions.length}</span>
-                    <button
-                      class="btn btn-xs btn-ghost"
-                      onclick={() => aiIndex = (aiIndex + 1) % aiQuestions.length}
-                      aria-label="Next question"
-                      data-testid="ai-next-btn"
-                    >▶</button>
-                  </div>
-                  <button
-                    class="btn btn-xs btn-ghost text-base-content/50"
-                    onclick={generateQuestions}
-                    disabled={loading || aiLoading}
-                    data-testid="regenerate-btn"
-                  >
-                    {#if aiLoading}<span class="loading loading-spinner loading-xs"></span>{:else}↺ Regenerate{/if}
-                  </button>
-                </div>
-              </div>
-            {/if}
-
-            {#if aiError}
-              <p class="text-error text-xs" data-testid="ai-error">{aiError}</p>
-            {/if}
-          </div>
-        {:else}
-          <p class="text-xs text-slate-400">Pick a topic to see example questions.</p>
-        {/if}
-      {/if}
-    </div>
   {/if}
 
   <div role="tablist" class="tabs tabs-boxed mb-6">
@@ -421,6 +348,94 @@
     <div class="alert alert-error mt-4" data-testid="error-message">
       <span>{errorMsg}</span>
       <button class="btn btn-sm btn-ghost" onclick={() => errorMsg = ''}>Dismiss</button>
+    </div>
+  {/if}
+
+  {#if !isGapMode}
+    <!-- Inspiration section — below the capture area -->
+    <div class="border-t border-base-300 pt-4 mt-6" data-testid="inspiration-section">
+      <button
+        class="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700 w-full text-left mb-2 transition-colors"
+        onclick={() => inspirationOpen = !inspirationOpen}
+        data-testid="inspiration-toggle"
+        aria-expanded={inspirationOpen}
+      >
+        <span class="text-xs">{inspirationOpen ? '▾' : '▸'}</span>
+        💡 Need inspiration? {gapCompetency && !inspirationOpen ? `· ${gapCompetency} needs a story` : ''}
+      </button>
+
+      {#if inspirationOpen}
+        <div class="flex flex-wrap gap-1.5 mb-3 mt-1">
+          {#each COMPETENCIES as c}
+            <button
+              class="badge badge-sm cursor-pointer {activeCompetency === c ? 'badge-primary' : 'badge-ghost'}"
+              onclick={() => _selectedCompetency = _selectedCompetency === c ? null : c}
+              data-testid="inspiration-tag-{c.toLowerCase().replace(/\W+/g, '-')}"
+            >{c}</button>
+          {/each}
+        </div>
+
+        {#if activeCompetency && questions.length > 0}
+          <!-- Unified pager -->
+          <div class="bg-base-200 rounded-lg px-3 py-2.5 flex flex-col gap-2" data-testid="ai-questions">
+            <div class="flex items-start gap-2">
+              <span class="text-primary shrink-0 mt-0.5">▸</span>
+              <p class="text-sm text-slate-600 italic flex-1">"{questions[questionIndex]}"</p>
+              {#if isAI}<span class="badge badge-xs badge-primary shrink-0 self-start mt-0.5">✨ AI</span>{/if}
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1">
+                <button
+                  class="btn btn-xs btn-ghost"
+                  onclick={() => questionIndex = (questionIndex - 1 + questions.length) % questions.length}
+                  aria-label="Previous question"
+                  data-testid="ai-prev-btn"
+                >◀</button>
+                <span class="text-xs text-base-content/40" data-testid="ai-counter">{questionIndex + 1} / {questions.length}</span>
+                <button
+                  class="btn btn-xs btn-ghost"
+                  onclick={() => questionIndex = (questionIndex + 1) % questions.length}
+                  aria-label="Next question"
+                  data-testid="ai-next-btn"
+                >▶</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-2 flex flex-col gap-1">
+            {#if !isAI}
+              <button
+                class="btn btn-sm btn-outline btn-primary w-full"
+                onclick={generateQuestions}
+                disabled={loading || isGenerating}
+                data-testid="generate-questions-btn"
+              >
+                {#if isGenerating}
+                  <span class="loading loading-spinner loading-xs"></span> Generating…
+                {:else}
+                  ✨ Generate questions
+                {/if}
+              </button>
+            {:else}
+              <button
+                class="btn btn-xs btn-ghost text-base-content/50 w-full"
+                onclick={generateQuestions}
+                disabled={loading || isGenerating}
+                data-testid="regenerate-btn"
+              >
+                {#if isGenerating}<span class="loading loading-spinner loading-xs"></span>{:else}↺ Regenerate{/if}
+              </button>
+            {/if}
+            {#if genError}
+              <p class="text-error text-xs" data-testid="ai-error">{genError}</p>
+            {/if}
+          </div>
+        {:else if activeCompetency}
+          <p class="text-xs text-slate-400">No prompts available for this topic.</p>
+        {:else}
+          <p class="text-xs text-slate-400">Pick a topic to see example questions.</p>
+        {/if}
+      {/if}
     </div>
   {/if}
 </div>
