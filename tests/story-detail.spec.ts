@@ -39,7 +39,7 @@ async function openDetail(page: import('@playwright/test').Page, story: Story) {
 
 test('story detail shows all fields', async ({ page }) => {
   await openDetail(page, makeStory());
-  await expect(page.getByTestId('detail-title')).toHaveValue('Webpack Migration Story');
+  await expect(page.getByTestId('detail-title')).toHaveText('Webpack Migration Story');
   await expect(page.getByTestId('detail-situation')).toHaveValue('Original situation');
   await expect(page.getByTestId('detail-result')).toHaveValue('Original result');
   await expect(page.getByTestId('detail-action-item')).toHaveCount(2);
@@ -55,12 +55,12 @@ test('editing result and saving persists on reload', async ({ page }) => {
   await expect(page.getByTestId('detail-result')).toHaveValue('New result text');
 });
 
-test('setting rank to 4 stars persists', async ({ page }) => {
+test('setting strength to great persists', async ({ page }) => {
   await openDetail(page, makeStory());
-  await page.getByTestId('rank-star').nth(3).click(); // 4th star = rank 4
+  await page.getByTestId('strength-dot').nth(2).click(); // 3rd dot = great = rank 5
   await page.getByTestId('save-btn').click();
   const stories = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_stories') ?? '[]'));
-  expect(stories[0].rank).toBe(4);
+  expect(stories[0].rank).toBe(5);
 });
 
 test('delete shows modal, cancel keeps story', async ({ page }) => {
