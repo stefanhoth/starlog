@@ -21,12 +21,12 @@ function createStoriesStore() {
 
   return {
     subscribe,
-    addStory(draft: StoryDraft): Story {
+    addStory(draft: StoryDraft, rank = 3): Story {
       const story: Story = {
         ...draft,
         id: crypto.randomUUID(),
         notes: '',
-        rank: 3,
+        rank,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
