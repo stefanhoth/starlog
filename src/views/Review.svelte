@@ -77,12 +77,52 @@
     if (e.key === 'Escape') cancelEdit();
   }
 
-  // ── Actions ──────────────────────────────────────────────────────────
-  function removeAction(i: number) { if (actions.length > 1) actions = actions.filter((_, idx) => idx !== i); }
-  function updateAction(i: number, val: string) {
-    actions = actions.map((a, idx) => idx === i ? val : a);
+  // ── Actions (click-to-edit + drag-to-reorder) ───────────────────────
+  let editingActionIdx = $state<number | null>(null);
+  let actionDraft      = $state('');
+  let dragFromIdx      = $state<number | null>(null);
+  let dragOverIdx      = $state<number | null>(null);
+
+  function startEditAction(i: number) {
+    if (editingActionIdx !== null && editingActionIdx !== i) saveAction();
+    editingActionIdx = i;
+    actionDraft = actions[i];
   }
-  function addAction() { actions = [...actions, '']; }
+  function saveAction() {
+    if (editingActionIdx === null) return;
+    const idx = editingActionIdx;
+    actions = actions.map((a, i) => i === idx ? actionDraft : a);
+    editingActionIdx = null;
+  }
+  function cancelAction() { editingActionIdx = null; }
+  function actionKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') { e.preventDefault(); saveAction(); }
+    if (e.key === 'Escape') cancelAction();
+  }
+  function removeAction(i: number) { if (actions.length > 1) actions = actions.filter((_, idx) => idx !== i); }
+  function addAction() {
+    if (editingActionIdx !== null) saveAction();
+    actions = [...actions, ''];
+    editingActionIdx = actions.length - 1;
+    actionDraft = '';
+  }
+
+  function reorder<T>(arr: T[], from: number, to: number): T[] {
+    const next = [...arr];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    return next;
+  }
+  function onDragStart(i: number) { dragFromIdx = i; }
+  function onDragOver(e: DragEvent, i: number) { e.preventDefault(); dragOverIdx = i; }
+  function onDrop(e: DragEvent, i: number) {
+    e.preventDefault();
+    if (dragFromIdx === null || dragFromIdx === i) { dragFromIdx = null; dragOverIdx = null; return; }
+    actions = reorder(actions, dragFromIdx, i);
+    dragFromIdx = null;
+    dragOverIdx = null;
+  }
+  function onDragEnd() { dragFromIdx = null; dragOverIdx = null; }
 
   function toggleTag(tag: string) {
     tags = tags.includes(tag) ? tags.filter(t => t !== tag) : [...tags, tag];
@@ -303,24 +343,48 @@
         <div class="w-px bg-base-300 flex-1 mt-1 min-h-8"></div>
       </div>
       <div class="flex-1 pb-5">
-        <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center justify-between mb-1">
           <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Action {QUALITY_ICON[quality.action]}</span>
-          <button class="btn btn-xs btn-ghost" onclick={addAction}>+ Add step</button>
         </div>
+        <p class="text-xs text-base-content/30 mb-2">drag ⋮⋮ to reorder · hover to edit or remove</p>
         {#each actions as action, i}
-          <div class="flex gap-2 mb-2">
-            <input
-              class="input input-bordered input-sm flex-1 text-sm"
-              value={action}
-              oninput={(e) => updateAction(i, (e.target as HTMLInputElement).value)}
-              placeholder="Step {i + 1}"
-              data-testid="action-item"
-            />
-            {#if actions.length > 1}
-              <button class="btn btn-xs btn-ghost text-error" onclick={() => removeAction(i)}>✕</button>
+          <div
+            role="listitem"
+            class="flex gap-2 mb-1.5 items-center group {dragOverIdx === i && dragFromIdx !== i ? 'bg-primary/5 rounded ring-1 ring-primary/20' : ''}"
+            draggable={editingActionIdx !== i}
+            ondragstart={() => onDragStart(i)}
+            ondragover={(e) => onDragOver(e, i)}
+            ondrop={(e) => onDrop(e, i)}
+            ondragend={onDragEnd}
+          >
+            <span class="cursor-grab text-base-content/20 hover:text-base-content/50 select-none shrink-0 text-sm" title="drag to reorder">⋮⋮</span>
+            <span class="text-xs text-base-content/40 w-4 shrink-0 text-right">{i + 1}.</span>
+            {#if editingActionIdx === i}
+              <input
+                class="input input-bordered input-sm flex-1 text-sm"
+                bind:value={actionDraft}
+                onkeydown={actionKeydown}
+                data-testid="action-item"
+              />
+              <button class="btn btn-xs btn-ghost" onclick={cancelAction}>esc</button>
+              <button class="btn btn-xs btn-primary" onclick={saveAction}>✓</button>
+              {#if actions.length > 1}
+                <button class="btn btn-xs btn-ghost text-error" onclick={() => removeAction(i)} data-testid="remove-action-btn">✕</button>
+              {/if}
+            {:else}
+              <button
+                class="flex-1 text-left text-sm hover:bg-base-200/60 rounded px-1 py-0.5 transition-colors"
+                onclick={() => startEditAction(i)}
+                data-testid="action-item"
+              >{#if action}{action}{:else}<span class="text-base-content/30 italic">click to add…</span>{/if}</button>
+              <button class="btn btn-xs btn-ghost opacity-0 group-hover:opacity-100 transition-opacity" onclick={() => startEditAction(i)} aria-label="Edit step {i + 1}">✏</button>
+              {#if actions.length > 1}
+                <button class="btn btn-xs btn-ghost text-error opacity-0 group-hover:opacity-100 transition-opacity" onclick={() => removeAction(i)} data-testid="remove-action-btn">✕</button>
+              {/if}
             {/if}
           </div>
         {/each}
+        <button class="text-xs text-primary/70 hover:text-primary mt-1 transition-colors" onclick={addAction}>+ Add step</button>
       </div>
     </div>
 
