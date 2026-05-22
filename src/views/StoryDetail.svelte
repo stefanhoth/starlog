@@ -2,7 +2,6 @@
   import { storiesStore } from '../lib/stores/stories';
   import { navigate } from '../lib/stores/view';
   import { COMPETENCIES } from '../lib/competencies';
-  import type { Story } from '../lib/types';
 
   const QUALITY_ICON: Record<string, string> = { high: '🟢', medium: '🟡', low: '🔴' };
 
@@ -11,6 +10,12 @@
     { rank: 3, label: 'ok',    dot: 'bg-amber-400  border-amber-400'  },
     { rank: 5, label: 'great', dot: 'bg-emerald-400 border-emerald-400' },
   ];
+
+  const COACHING: Record<string, string> = {
+    situation: 'Set the scene: name the company/team, time period, and what was at stake.',
+    task:      'Who set this goal? Naming the stakeholder makes the stakes obvious.',
+    result:    'Quantify the outcome — numbers, percentages, timelines, or team size.',
+  };
 
   const storyId = sessionStorage.getItem('starlog_active_story') ?? '';
   const original = $storiesStore.find(s => s.id === storyId);
@@ -26,12 +31,79 @@
   let notes     = $state(original?.notes ?? '');
   let rank      = $state(original?.rank ?? 3);
   let quality   = $state({ ...(original?.quality ?? { situation: 'medium', task: 'medium', action: 'medium', result: 'medium', notes: '' }) });
-  let showTagPicker    = $state(false);
+  let showTagPicker     = $state(false);
   let showDeleteConfirm = $state(false);
-  let editingField     = $state<string | null>(null);
-  let editingActionIdx = $state<number | null>(null);
 
   const activeStrengthIdx = $derived(rank <= 2 ? 0 : rank <= 4 ? 1 : 2);
+
+  // ── Click-to-edit ────────────────────────────────────────────────────
+  type EditableField = 'situation' | 'task' | 'result' | 'title';
+  let editingField = $state<EditableField | null>(null);
+  let fieldDraft   = $state('');
+
+  function startEdit(field: EditableField, value: string) {
+    if (editingField && editingField !== field) commitEdit();
+    editingField = field;
+    fieldDraft   = value;
+  }
+
+  function commitEdit() {
+    if (!editingField) return;
+    if (editingField === 'situation') situation = fieldDraft;
+    else if (editingField === 'task')   task      = fieldDraft;
+    else if (editingField === 'result') result    = fieldDraft;
+    else if (editingField === 'title')  title     = fieldDraft;
+    editingField = null;
+    save();
+  }
+
+  function cancelEdit() { editingField = null; }
+
+  function fieldKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit(); }
+    if (e.key === 'Escape') cancelEdit();
+  }
+
+  // ── Action items (click-to-edit, one at a time) ───────────────────────
+  let editingActionIdx = $state<number | null>(null);
+  let actionDraft      = $state('');
+
+  function startEditAction(i: number) {
+    if (editingActionIdx !== null && editingActionIdx !== i) saveAction();
+    editingActionIdx = i;
+    actionDraft = actions[i];
+  }
+
+  function saveAction() {
+    if (editingActionIdx === null) return;
+    const idx = editingActionIdx;
+    actions = actions.map((a, i) => i === idx ? actionDraft : a);
+    editingActionIdx = null;
+    save();
+  }
+
+  function cancelAction() { editingActionIdx = null; }
+
+  function actionKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') { e.preventDefault(); saveAction(); }
+    if (e.key === 'Escape') cancelAction();
+  }
+
+  function removeAction(i: number) {
+    if (actions.length <= 1) return;
+    actions = actions.filter((_, idx) => idx !== i);
+    save();
+  }
+
+  function addAction() {
+    actions = [...actions, ''];
+    editingActionIdx = actions.length - 1;
+    actionDraft = '';
+  }
+
+  function toggleTag(tag: string) {
+    tags = tags.includes(tag) ? tags.filter(t => t !== tag) : [...tags, tag];
+  }
 
   function save() {
     storiesStore.updateStory(storyId, {
@@ -48,20 +120,11 @@
     sessionStorage.removeItem('starlog_active_story');
     navigate('story-bank');
   }
-
-  function addAction() { actions = [...actions, '']; }
-  function removeAction(i: number) { actions = actions.filter((_, idx) => idx !== i); }
-  function updateAction(i: number, val: string) {
-    actions = actions.map((a, idx) => idx === i ? val : a);
-  }
-  function toggleTag(tag: string) {
-    tags = tags.includes(tag) ? tags.filter(t => t !== tag) : [...tags, tag];
-  }
 </script>
 
 <div class="p-6 max-w-2xl mx-auto" data-testid="story-detail-view">
 
-  <!-- Breadcrumb + actions row -->
+  <!-- Breadcrumb + actions -->
   <div class="flex items-start justify-between mb-4 gap-2">
     <div class="flex items-center gap-1.5 text-sm text-base-content/50 flex-wrap min-w-0">
       <button class="hover:text-base-content transition-colors shrink-0" onclick={() => navigate('story-bank')}>← Story bank</button>
@@ -70,15 +133,30 @@
     </div>
     <div class="flex gap-2 shrink-0">
       <button class="btn btn-error btn-sm btn-outline" onclick={() => showDeleteConfirm = true} data-testid="delete-btn">Delete</button>
-      <button class="btn btn-primary btn-sm" onclick={save} data-testid="save-btn">Save</button>
+      <button class="btn btn-primary btn-sm" onclick={() => { if (editingField) commitEdit(); else save(); }} data-testid="save-btn">Save</button>
     </div>
   </div>
 
   <!-- Title -->
-  <h2 class="text-2xl font-bold mb-1" data-testid="detail-title">{title || 'Untitled Story'}</h2>
-  <p class="text-sm text-base-content/40 mb-4">
-    <button class="hover:text-base-content transition-colors">✏ edit</button>
-  </p>
+  {#if editingField === 'title'}
+    <div class="mb-4">
+      <input
+        class="input input-bordered w-full text-2xl font-bold"
+        bind:value={fieldDraft}
+        onkeydown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') cancelEdit(); }}
+        data-testid="detail-title-input"
+      />
+      <div class="flex justify-end gap-1 mt-1">
+        <button class="btn btn-xs btn-ghost" onclick={cancelEdit}>esc</button>
+        <button class="btn btn-xs btn-primary" onclick={commitEdit}>✓ save</button>
+      </div>
+    </div>
+  {:else}
+    <div class="flex items-baseline gap-2 mb-4">
+      <h2 class="text-2xl font-bold" data-testid="detail-title">{title || 'Untitled Story'}</h2>
+      <button class="text-xs text-base-content/40 hover:text-base-content transition-colors" onclick={() => startEdit('title', title)}>✏ edit</button>
+    </div>
+  {/if}
 
   <!-- Strength + Tags -->
   <div class="flex flex-wrap items-center gap-3 mb-5">
@@ -134,19 +212,30 @@
           <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Situation</span>
           <span class="text-xs">{QUALITY_ICON[quality.situation]}</span>
         </div>
-        <textarea
-          class="w-full resize-none rounded leading-relaxed transition-colors duration-100
-                 {editingField === 'situation'
-                   ? 'textarea textarea-bordered h-24 resize-y'
-                   : 'border-0 bg-transparent cursor-text hover:bg-base-200/60 p-1 outline-none text-base'}"
-          style={editingField !== 'situation' ? 'field-sizing: content' : ''}
-          value={situation}
-          oninput={(e) => situation = (e.target as HTMLTextAreaElement).value}
-          onfocus={() => editingField = 'situation'}
-          onblur={() => { editingField = null; save(); }}
-          onkeydown={(e) => { if (e.key === 'Escape') (e.target as HTMLElement).blur(); }}
-          data-testid="detail-situation"
-        ></textarea>
+        {#if editingField === 'situation'}
+          <textarea
+            class="textarea textarea-bordered w-full h-24 resize-y text-sm"
+            bind:value={fieldDraft}
+            onkeydown={fieldKeydown}
+            data-testid="detail-situation"
+          ></textarea>
+          <div class="flex items-start justify-between mt-1 gap-2">
+            <span class="text-xs text-base-content/50 italic">↪ {COACHING.situation}</span>
+            <div class="flex gap-1 shrink-0">
+              <button class="btn btn-xs btn-ghost" onclick={cancelEdit}>esc</button>
+              <button class="btn btn-xs btn-primary" onclick={commitEdit}>✓ save</button>
+            </div>
+          </div>
+          <p class="text-xs text-base-content/30 mt-0.5">↵ to save</p>
+        {:else}
+          <button
+            class="w-full text-left text-sm hover:bg-base-200/60 rounded px-1 py-0.5 transition-colors min-h-8 section-situation"
+            onclick={() => startEdit('situation', situation)}
+            data-testid="detail-situation"
+          >
+            {#if situation}{situation}{:else}<span class="text-base-content/30 italic">click to add…</span>{/if}
+          </button>
+        {/if}
       </div>
     </div>
 
@@ -161,19 +250,30 @@
           <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Task</span>
           <span class="text-xs">{QUALITY_ICON[quality.task]}</span>
         </div>
-        <textarea
-          class="w-full resize-none rounded leading-relaxed transition-colors duration-100
-                 {editingField === 'task'
-                   ? 'textarea textarea-bordered h-24 resize-y'
-                   : 'border-0 bg-transparent cursor-text hover:bg-base-200/60 p-1 outline-none text-base'}"
-          style={editingField !== 'task' ? 'field-sizing: content' : ''}
-          value={task}
-          oninput={(e) => task = (e.target as HTMLTextAreaElement).value}
-          onfocus={() => editingField = 'task'}
-          onblur={() => { editingField = null; save(); }}
-          onkeydown={(e) => { if (e.key === 'Escape') (e.target as HTMLElement).blur(); }}
-          data-testid="detail-task"
-        ></textarea>
+        {#if editingField === 'task'}
+          <textarea
+            class="textarea textarea-bordered w-full h-24 resize-y text-sm"
+            bind:value={fieldDraft}
+            onkeydown={fieldKeydown}
+            data-testid="detail-task"
+          ></textarea>
+          <div class="flex items-start justify-between mt-1 gap-2">
+            <span class="text-xs text-base-content/50 italic">↪ {COACHING.task}</span>
+            <div class="flex gap-1 shrink-0">
+              <button class="btn btn-xs btn-ghost" onclick={cancelEdit}>esc</button>
+              <button class="btn btn-xs btn-primary" onclick={commitEdit}>✓ save</button>
+            </div>
+          </div>
+          <p class="text-xs text-base-content/30 mt-0.5">↵ to save</p>
+        {:else}
+          <button
+            class="w-full text-left text-sm hover:bg-base-200/60 rounded px-1 py-0.5 transition-colors min-h-8"
+            onclick={() => startEdit('task', task)}
+            data-testid="detail-task"
+          >
+            {#if task}{task}{:else}<span class="text-base-content/30 italic">click to add…</span>{/if}
+          </button>
+        {/if}
       </div>
     </div>
 
@@ -186,33 +286,38 @@
       <div class="flex-1 pb-5">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Action {QUALITY_ICON[quality.action]}</span>
-          {#if editingActionIdx !== null}
-            <button class="btn btn-xs btn-ghost" onclick={addAction}>+ Add step</button>
-          {/if}
         </div>
         {#each actions as action, i}
           <div class="flex gap-2 mb-1.5 items-center">
-            <input
-              class="flex-1 rounded transition-colors duration-100
-                     {editingActionIdx === i
-                       ? 'input input-bordered input-sm'
-                       : 'border-0 bg-transparent cursor-text hover:bg-base-200/60 p-1 text-sm outline-none'}"
-              value={action}
-              oninput={(e) => updateAction(i, (e.target as HTMLInputElement).value)}
-              onfocus={() => editingActionIdx = i}
-              onblur={() => { editingActionIdx = null; save(); }}
-              onkeydown={(e) => { if (e.key === 'Escape') (e.target as HTMLElement).blur(); }}
-              data-testid="detail-action-item"
-            />
-            {#if editingActionIdx === i && actions.length > 1}
-              <button class="btn btn-xs btn-ghost text-error" onmousedown={() => removeAction(i)} data-testid="remove-action-btn">✕</button>
+            {#if editingActionIdx === i}
+              <input
+                class="input input-bordered input-sm flex-1 text-sm"
+                bind:value={actionDraft}
+                onkeydown={actionKeydown}
+                data-testid="detail-action-item"
+              />
+              <button class="btn btn-xs btn-ghost" onclick={cancelAction}>esc</button>
+              <button class="btn btn-xs btn-primary" onclick={saveAction}>✓</button>
+              {#if actions.length > 1}
+                <button class="btn btn-xs btn-ghost text-error" onclick={() => removeAction(i)} data-testid="remove-action-btn">✕</button>
+              {/if}
+            {:else}
+              <button
+                class="flex-1 text-left text-sm hover:bg-base-200/60 rounded px-1 py-0.5 transition-colors"
+                onclick={() => startEditAction(i)}
+                data-testid="detail-action-item"
+              >{#if action}{action}{:else}<span class="text-base-content/30 italic">empty step</span>{/if}</button>
+              {#if actions.length > 1}
+                <button class="btn btn-xs btn-ghost text-error opacity-0 hover:opacity-100 focus:opacity-100" onclick={() => removeAction(i)} data-testid="remove-action-btn">✕</button>
+              {/if}
             {/if}
           </div>
         {/each}
+        <button class="text-xs text-primary/70 hover:text-primary mt-1 transition-colors" onclick={addAction}>+ add step</button>
       </div>
     </div>
 
-    <!-- R — Result (last — no line below) -->
+    <!-- R — Result (no line below) -->
     <div class="flex gap-4">
       <div class="flex flex-col items-center w-8 shrink-0">
         <div class="w-8 h-8 rounded-full bg-base-200 text-base-content flex items-center justify-center font-bold text-sm shrink-0">R</div>
@@ -222,19 +327,30 @@
           <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Result</span>
           <span class="text-xs">{QUALITY_ICON[quality.result]}</span>
         </div>
-        <textarea
-          class="w-full resize-none rounded leading-relaxed transition-colors duration-100
-                 {editingField === 'result'
-                   ? 'textarea textarea-bordered h-24 resize-y'
-                   : 'border-0 bg-transparent cursor-text hover:bg-base-200/60 p-1 outline-none text-base'}"
-          style={editingField !== 'result' ? 'field-sizing: content' : ''}
-          value={result}
-          oninput={(e) => result = (e.target as HTMLTextAreaElement).value}
-          onfocus={() => editingField = 'result'}
-          onblur={() => { editingField = null; save(); }}
-          onkeydown={(e) => { if (e.key === 'Escape') (e.target as HTMLElement).blur(); }}
-          data-testid="detail-result"
-        ></textarea>
+        {#if editingField === 'result'}
+          <textarea
+            class="textarea textarea-bordered w-full h-24 resize-y text-sm"
+            bind:value={fieldDraft}
+            onkeydown={fieldKeydown}
+            data-testid="detail-result"
+          ></textarea>
+          <div class="flex items-start justify-between mt-1 gap-2">
+            <span class="text-xs text-base-content/50 italic">↪ {COACHING.result}</span>
+            <div class="flex gap-1 shrink-0">
+              <button class="btn btn-xs btn-ghost" onclick={cancelEdit}>esc</button>
+              <button class="btn btn-xs btn-primary" onclick={commitEdit}>✓ save</button>
+            </div>
+          </div>
+          <p class="text-xs text-base-content/30 mt-0.5">↵ to save</p>
+        {:else}
+          <button
+            class="w-full text-left text-sm hover:bg-base-200/60 rounded px-1 py-0.5 transition-colors min-h-8"
+            onclick={() => startEdit('result', result)}
+            data-testid="detail-result"
+          >
+            {#if result}{result}{:else}<span class="text-base-content/30 italic">click to add…</span>{/if}
+          </button>
+        {/if}
       </div>
     </div>
 

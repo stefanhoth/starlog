@@ -40,19 +40,22 @@ async function openDetail(page: import('@playwright/test').Page, story: Story) {
 test('story detail shows all fields', async ({ page }) => {
   await openDetail(page, makeStory());
   await expect(page.getByTestId('detail-title')).toHaveText('Webpack Migration Story');
-  await expect(page.getByTestId('detail-situation')).toHaveValue('Original situation');
-  await expect(page.getByTestId('detail-result')).toHaveValue('Original result');
+  await expect(page.getByTestId('detail-situation')).toHaveText('Original situation');
+  await expect(page.getByTestId('detail-result')).toHaveText('Original result');
   await expect(page.getByTestId('detail-action-item')).toHaveCount(2);
 });
 
 test('editing result and saving persists on reload', async ({ page }) => {
   await openDetail(page, makeStory());
+  // Click the read-mode button to enter edit mode, then fill the textarea
+  await page.getByTestId('detail-result').click();
   await page.getByTestId('detail-result').fill('New result text');
   await page.getByTestId('save-btn').click();
   await page.reload();
   await page.getByTestId('nav-story-bank').click();
   await page.getByTestId('story-row').first().click();
-  await expect(page.getByTestId('detail-result')).toHaveValue('New result text');
+  // After reload, result is shown in a read-mode button
+  await expect(page.getByTestId('detail-result')).toHaveText('New result text');
 });
 
 test('setting strength to great persists', async ({ page }) => {
