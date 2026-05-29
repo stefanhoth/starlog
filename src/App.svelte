@@ -11,6 +11,7 @@
   import JobHub from './views/JobHub.svelte';
   import StoryBank from './views/StoryBank.svelte';
   import InterviewMode from './views/InterviewMode.svelte';
+  import Data from './views/Data.svelte';
 
   // Redirect to onboarding if not yet configured; existing users go to job hub.
   // Guard against pushing a redundant history entry when URL already resolved correctly.
@@ -140,6 +141,16 @@
 
       <div class="px-2 py-3 border-t border-base-200">
         <button
+          class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors
+            {$currentView === 'data'
+              ? 'bg-base-200 text-base-content font-medium'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}"
+          onclick={() => navigate('data')}
+          data-testid="nav-data"
+        >
+          🗄 Data
+        </button>
+        <button
           class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm text-base-content/50 hover:text-base-content hover:bg-base-200 transition-colors"
           onclick={() => navigate('onboarding')}
           data-testid="settings-cog"
@@ -175,6 +186,8 @@
         <Review />
       {:else if $currentView === 'story-detail'}
         <StoryDetail />
+      {:else if $currentView === 'data'}
+        <Data />
       {:else if $currentView === 'onboarding'}
         <Onboarding />
       {:else if $currentView === 'add-job'}

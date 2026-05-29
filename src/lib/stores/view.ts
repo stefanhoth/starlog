@@ -10,6 +10,7 @@ export type View =
   | 'review'
   | 'story-detail'
   | 'interview'
+  | 'data'
   // legacy — kept for backward compat with tests
   | 'library'
   | 'job-profiles'
@@ -33,6 +34,7 @@ function parseHash(hash: string): RouteState {
   if (path === 'stories/capture') return { view: 'capture' };
   if (path === 'stories/review') return { view: 'review' };
   if (path === 'interview') return { view: 'interview' };
+  if (path === 'data') return { view: 'data' };
   if (path === 'stories') return { view: 'story-bank' };
 
   const gapsMatch = path.match(/^job\/([^/]+)\/gaps$/);
@@ -61,6 +63,7 @@ function viewToHash(view: View, profileId?: string, storyId?: string): string {
     case 'review':            return '#/stories/review';
     case 'story-detail':      return storyId ? `#/stories/${storyId}` : '#/stories';
     case 'interview':         return '#/interview';
+    case 'data':              return '#/data';
     default:                  return '#/';
   }
 }
