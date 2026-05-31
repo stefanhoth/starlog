@@ -53,6 +53,7 @@
 		animated?: boolean;
 		colors?: string[];
 		fillOpacity?: number;
+		noShadow?: boolean;
 	};
 
 	let {
@@ -67,7 +68,8 @@
 		coneSpread = 25,
 		animated = false,
 		colors = ['#FF8A4C', '#FFC18A', '#FF6B2C'],
-		fillOpacity = 0.5
+		fillOpacity = 0.5,
+		noShadow = false
 	}: Props = $props();
 
 	let cardRef: HTMLDivElement;
@@ -194,7 +196,7 @@
 	onpointerleave={() => (isHovered = false)}
 	class="relative grid isolate border border-white/15 {className}"
 	role="presentation"
-	style="background:{backgroundColor}; border-radius:{borderRadius}px; transform:translate3d(0,0,0.01px); box-shadow: rgba(0,0,0,0.1) 0 1px 2px, rgba(0,0,0,0.1) 0 2px 4px, rgba(0,0,0,0.1) 0 4px 8px, rgba(0,0,0,0.1) 0 8px 16px, rgba(0,0,0,0.1) 0 16px 32px, rgba(0,0,0,0.1) 0 32px 64px;"
+	style="background:{backgroundColor}; border-radius:{borderRadius}px; transform:translate3d(0,0,0.01px); {noShadow ? '' : 'box-shadow: rgba(0,0,0,0.1) 0 1px 2px, rgba(0,0,0,0.1) 0 2px 4px, rgba(0,0,0,0.1) 0 4px 8px, rgba(0,0,0,0.1) 0 8px 16px, rgba(0,0,0,0.1) 0 16px 32px, rgba(0,0,0,0.1) 0 32px 64px;'}"
 >
 	<div
 		class="absolute inset-0 -z-[1]"
