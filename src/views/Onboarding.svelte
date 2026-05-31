@@ -8,6 +8,7 @@
   import { exportData, parseBackup, applyImport, type BackupBundle } from '../lib/backup';
   import { GEMINI_MODELS, type GeminiModel } from '../lib/types';
   import AiWorking from '../lib/components/AiWorking.svelte';
+  import Brand from '../lib/components/Brand.svelte';
 
   // addJobMode: skip key step and go straight to job entry (for sidebar "+ add job")
   let { addJobMode = false }: { addJobMode?: boolean } = $props();
@@ -318,9 +319,8 @@
 
       <!-- Left: pitch -->
       <div class="flex flex-col justify-center px-8 py-14 lg:px-16 xl:px-24">
-        <div class="flex flex-col items-start gap-2 mb-10">
-          <img src="{import.meta.env.BASE_URL}icons/icon-192.png" alt="StarLog" class="w-20 h-20" />
-          <span class="font-bold text-lg tracking-tight">StarLog</span>
+        <div class="mb-10">
+          <Brand size="lg" />
         </div>
         <h1 class="text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1]">
           Walk into every interview<br class="hidden sm:block">
