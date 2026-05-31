@@ -66,7 +66,7 @@
       data-testid="nav"
     >
       <div class="px-5 py-4 border-b border-base-300 flex items-center gap-2">
-        <span class="text-primary font-bold text-lg leading-none">★</span>
+        <img src="{import.meta.env.BASE_URL}icons/icon-192.png" alt="StarLog" class="w-8 h-8" />
         <span class="font-bold text-sm tracking-tight text-base-content">StarLog</span>
       </div>
 

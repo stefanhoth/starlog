@@ -318,8 +318,8 @@
 
       <!-- Left: pitch -->
       <div class="flex flex-col justify-center px-8 py-14 lg:px-16 xl:px-24">
-        <div class="flex items-center gap-2 mb-10">
-          <span class="text-primary font-bold text-2xl leading-none">★</span>
+        <div class="flex flex-col items-start gap-2 mb-10">
+          <img src="{import.meta.env.BASE_URL}icons/icon-192.png" alt="StarLog" class="w-20 h-20" />
           <span class="font-bold text-lg tracking-tight">StarLog</span>
         </div>
         <h1 class="text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1]">
