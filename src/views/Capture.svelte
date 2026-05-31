@@ -212,9 +212,11 @@
       </p>
       <div class="font-mono text-4xl font-bold tabular-nums">{formatTime(elapsed)}</div>
       {#if recorderState === 'idle'}
-        <button class="btn btn-primary btn-lg gap-2" onclick={startRecording}>
-          ⏺ Start Recording
-        </button>
+        <AiWorking active={loading}>
+          <button class="btn btn-primary btn-lg gap-2 w-full" onclick={startRecording} disabled={loading}>
+            ⏺ Start Recording
+          </button>
+        </AiWorking>
       {:else if recorderState === 'recording'}
         <button class="btn btn-error btn-lg gap-2 animate-pulse" onclick={stopAndProcess}>
           ⏹ Stop & Process
