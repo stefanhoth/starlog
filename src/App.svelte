@@ -4,6 +4,7 @@
   import { jobProfilesStore } from './lib/stores/jobProfiles';
   import type { JobProfile } from './lib/types';
   import Onboarding from './views/Onboarding.svelte';
+  import Brand from './lib/components/Brand.svelte';
   import Library from './views/Library.svelte';
   import Capture from './views/Capture.svelte';
   import Review from './views/Review.svelte';
@@ -65,9 +66,8 @@
       class="hidden md:flex w-56 bg-base-100 border-r border-base-300 flex-col shrink-0"
       data-testid="nav"
     >
-      <div class="px-5 py-4 border-b border-base-300 flex items-center gap-2">
-        <span class="text-primary font-bold text-lg leading-none">★</span>
-        <span class="font-bold text-sm tracking-tight text-base-content">StarLog</span>
+      <div class="px-5 py-4 border-b border-base-300">
+        <Brand size="sm" />
       </div>
 
       <nav class="flex-1 py-3 px-2 flex flex-col overflow-y-auto">
