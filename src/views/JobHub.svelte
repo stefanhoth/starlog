@@ -54,6 +54,52 @@
 
   // Expandable ranked list per competency
   let expandedComp = $state<string | null>(null);
+
+  // Edit job profile modal
+  type EditComp = { original: string; current: string };
+
+  let editOpen = $state(false);
+  let editRole = $state('');
+  let editCompany = $state('');
+  let editComps = $state<EditComp[]>([]);
+  let newCompName = $state('');
+
+  function openEdit() {
+    if (!profile) return;
+    editRole = profile.role;
+    editCompany = profile.company;
+    editComps = profile.extractedCompetencies.map(c => ({ original: c, current: c }));
+    newCompName = '';
+    editOpen = true;
+  }
+
+  function removeEditComp(idx: number) {
+    editComps = editComps.filter((_, i) => i !== idx);
+  }
+
+  function addEditComp() {
+    const name = newCompName.trim();
+    if (!name) return;
+    editComps = [...editComps, { original: '', current: name }];
+    newCompName = '';
+  }
+
+  function saveEdit() {
+    if (!profile) return;
+    const newMap: Record<string, string[]> = {};
+    for (const comp of editComps) {
+      const name = comp.current.trim();
+      if (!name) continue;
+      newMap[name] = profile.competencyMap[comp.original] ?? [];
+    }
+    jobProfilesStore.updateJobProfile(profile.id, {
+      role: editRole.trim() || profile.role,
+      company: editCompany.trim() || profile.company,
+      extractedCompetencies: editComps.map(c => c.current.trim()).filter(Boolean),
+      competencyMap: newMap,
+    });
+    editOpen = false;
+  }
 </script>
 
 <div class="p-6 max-w-2xl mx-auto" data-testid="job-hub-view">
@@ -69,14 +115,25 @@
         <p class="text-base-content/50 text-sm mt-0.5">Add a job from the sidebar to get started.</p>
       {/if}
     </div>
-    {#if profile && competencies.length > 0}
-      <div class="text-right shrink-0 ml-4">
-        <span class="text-3xl font-bold {coveredCount === competencies.length ? 'text-success' : coveredCount > 0 ? 'text-warning' : 'text-error'}">
-          {coveredCount}/{competencies.length}
-        </span>
-        <p class="text-xs text-base-content/40 mt-0.5">competencies covered</p>
-      </div>
-    {/if}
+    <div class="flex items-start gap-2 shrink-0 ml-4">
+      {#if profile}
+        <button
+          class="btn btn-ghost btn-sm"
+          onclick={openEdit}
+          data-testid="edit-job-btn"
+        >
+          ✎ Edit job
+        </button>
+      {/if}
+      {#if profile && competencies.length > 0}
+        <div class="text-right">
+          <span class="text-3xl font-bold {coveredCount === competencies.length ? 'text-success' : coveredCount > 0 ? 'text-warning' : 'text-error'}">
+            {coveredCount}/{competencies.length}
+          </span>
+          <p class="text-xs text-base-content/40 mt-0.5">competencies covered</p>
+        </div>
+      {/if}
+    </div>
   </div>
 
   {#if !profile}
@@ -203,6 +260,94 @@
 
   {/if}
 </div>
+
+<!-- Edit job profile modal -->
+{#if editOpen}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="edit-job-title"
+    tabindex="-1"
+    onkeydown={(e) => e.key === 'Escape' && (editOpen = false)}
+    onclick={(e) => e.target === e.currentTarget && (editOpen = false)}
+  >
+    <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-md p-5 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+      <h3 id="edit-job-title" class="font-semibold text-base">Edit job profile</h3>
+
+      <!-- Role + Company -->
+      <div class="flex flex-col gap-3">
+        <label class="flex flex-col gap-1">
+          <span class="text-xs font-medium text-base-content/60">Role title</span>
+          <input
+            class="input input-bordered input-sm w-full"
+            type="text"
+            bind:value={editRole}
+            data-testid="edit-role-input"
+          />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-xs font-medium text-base-content/60">Company</span>
+          <input
+            class="input input-bordered input-sm w-full"
+            type="text"
+            bind:value={editCompany}
+            data-testid="edit-company-input"
+          />
+        </label>
+      </div>
+
+      <!-- Competencies -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-medium text-base-content/60">Competencies</span>
+        <div class="flex flex-col gap-1.5" data-testid="edit-competency-list">
+          {#each editComps as comp, idx}
+            <div class="flex items-center gap-2">
+              <input
+                class="input input-bordered input-sm flex-1 min-w-0"
+                type="text"
+                bind:value={comp.current}
+                data-testid="edit-comp-input"
+              />
+              <button
+                class="btn btn-ghost btn-sm btn-square text-error/60 hover:text-error"
+                onclick={() => removeEditComp(idx)}
+                aria-label="Remove competency"
+                data-testid="remove-comp-btn"
+              >
+                ✕
+              </button>
+            </div>
+          {/each}
+        </div>
+
+        <!-- Add competency -->
+        <div class="flex items-center gap-2 mt-1">
+          <input
+            class="input input-bordered input-sm flex-1 min-w-0"
+            type="text"
+            placeholder="Add competency…"
+            bind:value={newCompName}
+            onkeydown={(e) => e.key === 'Enter' && addEditComp()}
+            data-testid="add-comp-input"
+          />
+          <button
+            class="btn btn-ghost btn-sm"
+            onclick={addEditComp}
+            data-testid="add-comp-btn"
+          >
+            + Add
+          </button>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button class="btn btn-primary flex-1 btn-sm" onclick={saveEdit} data-testid="save-edit-btn">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick={() => editOpen = false} data-testid="cancel-edit-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- Map existing modal -->
 {#if mapComp !== null}
