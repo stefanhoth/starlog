@@ -51,10 +51,10 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 function getModel() {
-  const { apiKey } = get(settingsStore);
+  const { apiKey, geminiModel } = get(settingsStore);
   if (!apiKey) throw new GeminiError('No API key configured. Please complete setup.');
   const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  return genAI.getGenerativeModel({ model: geminiModel ?? 'gemini-3.5-flash' });
 }
 
 const STAR_PROMPT = `You are a career coach helping a job applicant structure their interview stories.
