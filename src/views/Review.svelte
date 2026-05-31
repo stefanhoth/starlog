@@ -50,15 +50,26 @@
 
   const activeStrengthIdx = $derived(rank <= 2 ? 0 : rank <= 4 ? 1 : 2);
 
+  // ── Auto-focus helper ────────────────────────────────────────────────
+  let activeInputRef: HTMLElement | null = null;
+
+  function autoFocus(node: HTMLElement) {
+    activeInputRef = node;
+    node.focus();
+    return { destroy() { if (activeInputRef === node) activeInputRef = null; } };
+  }
+
   // ── Click-to-edit ────────────────────────────────────────────────────
   type EditableField = 'situation' | 'task' | 'result' | 'title';
-  let editingField = $state<EditableField | null>(null);
-  let fieldDraft   = $state('');
+  let editingField   = $state<EditableField | null>(null);
+  let fieldDraft     = $state('');
+  let fieldOriginal  = $state('');
 
   function startEdit(field: EditableField, value: string) {
     if (editingField && editingField !== field) commitEdit();
-    editingField = field;
-    fieldDraft   = value;
+    editingField  = field;
+    fieldDraft    = value;
+    fieldOriginal = value;
   }
 
   function commitEdit() {
@@ -67,10 +78,20 @@
     else if (editingField === 'task')   task      = fieldDraft;
     else if (editingField === 'result') result    = fieldDraft;
     else if (editingField === 'title')  title     = fieldDraft;
-    editingField = null;
+    editingField  = null;
+    fieldOriginal = '';
   }
 
-  function cancelEdit() { editingField = null; }
+  function cancelEdit() {
+    if (fieldDraft !== fieldOriginal) {
+      if (!window.confirm('Discard unsaved changes?')) {
+        activeInputRef?.focus();
+        return;
+      }
+    }
+    editingField  = null;
+    fieldOriginal = '';
+  }
 
   function fieldKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit(); }
@@ -80,21 +101,33 @@
   // ── Actions (click-to-edit + drag-to-reorder) ───────────────────────
   let editingActionIdx = $state<number | null>(null);
   let actionDraft      = $state('');
+  let actionOriginal   = $state('');
   let dragFromIdx      = $state<number | null>(null);
   let dragOverIdx      = $state<number | null>(null);
 
   function startEditAction(i: number) {
     if (editingActionIdx !== null && editingActionIdx !== i) saveAction();
     editingActionIdx = i;
-    actionDraft = actions[i];
+    actionDraft      = actions[i];
+    actionOriginal   = actions[i];
   }
   function saveAction() {
     if (editingActionIdx === null) return;
     const idx = editingActionIdx;
     actions = actions.map((a, i) => i === idx ? actionDraft : a);
     editingActionIdx = null;
+    actionOriginal   = '';
   }
-  function cancelAction() { editingActionIdx = null; }
+  function cancelAction() {
+    if (actionDraft !== actionOriginal) {
+      if (!window.confirm('Discard unsaved changes?')) {
+        activeInputRef?.focus();
+        return;
+      }
+    }
+    editingActionIdx = null;
+    actionOriginal   = '';
+  }
   function actionKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') { e.preventDefault(); saveAction(); }
     if (e.key === 'Escape') cancelAction();
@@ -196,6 +229,7 @@
         bind:value={fieldDraft}
         onkeydown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') cancelEdit(); }}
         data-testid="story-title"
+        use:autoFocus
       />
       <div class="flex justify-end gap-1 mt-1">
         <button class="btn btn-xs btn-ghost" onclick={cancelEdit}>esc</button>
@@ -277,6 +311,7 @@
             bind:value={fieldDraft}
             onkeydown={fieldKeydown}
             data-testid="section-situation"
+            use:autoFocus
           ></textarea>
           <div class="flex items-start justify-between mt-1 gap-2">
             <span class="text-xs text-base-content/50 italic">↪ {COACHING.situation}</span>
@@ -315,6 +350,7 @@
             bind:value={fieldDraft}
             onkeydown={fieldKeydown}
             data-testid="section-task"
+            use:autoFocus
           ></textarea>
           <div class="flex items-start justify-between mt-1 gap-2">
             <span class="text-xs text-base-content/50 italic">↪ {COACHING.task}</span>
@@ -365,6 +401,7 @@
                 bind:value={actionDraft}
                 onkeydown={actionKeydown}
                 data-testid="action-item"
+                use:autoFocus
               />
               <button class="btn btn-xs btn-ghost" onclick={cancelAction}>esc</button>
               <button class="btn btn-xs btn-primary" onclick={saveAction}>✓</button>
@@ -404,6 +441,7 @@
             bind:value={fieldDraft}
             onkeydown={fieldKeydown}
             data-testid="section-result"
+            use:autoFocus
           ></textarea>
           <div class="flex items-start justify-between mt-1 gap-2">
             <span class="text-xs text-base-content/50 italic">↪ {COACHING.result}</span>
