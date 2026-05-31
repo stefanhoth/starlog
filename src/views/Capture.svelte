@@ -222,7 +222,6 @@
       {:else if recorderState === 'stopped'}
         <AiWorking active={true}>
           <button class="btn btn-primary btn-lg gap-2 w-full" disabled>
-            <span class="loading loading-spinner loading-sm"></span>
             Processing…
           </button>
         </AiWorking>
@@ -282,13 +281,6 @@
     </div>
   {/if}
 
-  {#if loading}
-    <div class="flex items-center gap-3 mt-4 text-base-content/60" data-testid="loading-indicator">
-      <span class="loading loading-spinner"></span>
-      <span>Analysing with Gemini…</span>
-    </div>
-  {/if}
-
   {#if errorMsg}
     <div class="alert alert-error mt-4" data-testid="error-message">
       <span>{errorMsg}</span>
@@ -332,29 +324,16 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          {#if !isAI}
+          <AiWorking active={isGenerating}>
             <button
               class="btn btn-sm btn-outline btn-primary w-full"
               onclick={generateQuestions}
               disabled={loading || isGenerating}
               data-testid="generate-questions-btn"
             >
-              {#if isGenerating}
-                <span class="loading loading-spinner loading-xs"></span> Generating…
-              {:else}
-                ✨ Generate questions
-              {/if}
+              I need different ideas
             </button>
-          {:else}
-            <button
-              class="btn btn-xs btn-ghost text-base-content/50 w-full"
-              onclick={generateQuestions}
-              disabled={loading || isGenerating}
-              data-testid="regenerate-btn"
-            >
-              {#if isGenerating}<span class="loading loading-spinner loading-xs"></span>{:else}↺ Regenerate{/if}
-            </button>
-          {/if}
+          </AiWorking>
           {#if genError}
             <p class="text-error text-xs" data-testid="ai-error">{genError}</p>
           {/if}
@@ -413,29 +392,16 @@
           </div>
 
           <div class="flex flex-col gap-1">
-            {#if !isAI}
+            <AiWorking active={isGenerating}>
               <button
                 class="btn btn-sm btn-outline btn-primary w-full"
                 onclick={generateQuestions}
                 disabled={loading || isGenerating}
                 data-testid="generate-questions-btn"
               >
-                {#if isGenerating}
-                  <span class="loading loading-spinner loading-xs"></span> Generating…
-                {:else}
-                  ✨ Generate questions
-                {/if}
+                I need different ideas
               </button>
-            {:else}
-              <button
-                class="btn btn-xs btn-ghost text-base-content/50 w-full"
-                onclick={generateQuestions}
-                disabled={loading || isGenerating}
-                data-testid="regenerate-btn"
-              >
-                {#if isGenerating}<span class="loading loading-spinner loading-xs"></span>{:else}↺ Regenerate{/if}
-              </button>
-            {/if}
+            </AiWorking>
             {#if genError}
               <p class="text-error text-xs" data-testid="ai-error">{genError}</p>
             {/if}
