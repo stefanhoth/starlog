@@ -5,6 +5,7 @@
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { COMPETENCIES } from '../lib/competencies';
   import { PROMPTS } from '../lib/inspiration';
+  import AiWorking from '../lib/components/AiWorking.svelte';
 
   // Gap-fill mode is authoritative from the router, not sessionStorage, to avoid
   // stale values bleeding into a normal "+ New Story" capture session.
@@ -211,13 +212,20 @@
       </p>
       <div class="font-mono text-4xl font-bold tabular-nums">{formatTime(elapsed)}</div>
       {#if recorderState === 'idle'}
-        <button class="btn btn-primary btn-lg gap-2" onclick={startRecording} disabled={loading}>
+        <button class="btn btn-primary btn-lg gap-2" onclick={startRecording}>
           ⏺ Start Recording
         </button>
       {:else if recorderState === 'recording'}
         <button class="btn btn-error btn-lg gap-2 animate-pulse" onclick={stopAndProcess}>
           ⏹ Stop & Process
         </button>
+      {:else if recorderState === 'stopped'}
+        <AiWorking active={true}>
+          <button class="btn btn-primary btn-lg gap-2 w-full" disabled>
+            <span class="loading loading-spinner loading-sm"></span>
+            Processing…
+          </button>
+        </AiWorking>
       {/if}
     </div>
   {/if}
@@ -237,14 +245,16 @@
       {#if uploadedFile}
         <p class="text-sm text-base-content/70">Selected: <strong>{uploadedFile.name}</strong></p>
       {/if}
-      <button
-        class="btn btn-primary"
-        onclick={processUpload}
-        disabled={!uploadedFile || loading}
-        data-testid="upload-submit"
-      >
-        {loading ? 'Processing…' : 'Extract STAR'}
-      </button>
+      <AiWorking active={loading}>
+        <button
+          class="btn btn-primary w-full"
+          onclick={processUpload}
+          disabled={!uploadedFile || loading}
+          data-testid="upload-submit"
+        >
+          {loading ? 'Processing…' : 'Extract STAR'}
+        </button>
+      </AiWorking>
     </div>
   {/if}
 
@@ -259,14 +269,16 @@
         bind:value={textInput}
         data-testid="text-input"
       ></textarea>
-      <button
-        class="btn btn-primary"
-        onclick={processText}
-        disabled={!textInput.trim() || loading}
-        data-testid="text-submit"
-      >
-        {loading ? 'Processing…' : 'Extract STAR'}
-      </button>
+      <AiWorking active={loading}>
+        <button
+          class="btn btn-primary w-full"
+          onclick={processText}
+          disabled={!textInput.trim() || loading}
+          data-testid="text-submit"
+        >
+          {loading ? 'Processing…' : 'Extract STAR'}
+        </button>
+      </AiWorking>
     </div>
   {/if}
 
