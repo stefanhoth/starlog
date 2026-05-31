@@ -3,7 +3,7 @@ import type { Settings } from '../types';
 
 const KEY = 'starlog_settings';
 
-const defaults: Settings = { apiKey: '', consentGiven: false, geminiModel: 'gemini-2.5-flash' };
+const defaults: Settings = { apiKey: '', consentGiven: false, geminiModel: 'gemini-3.5-flash' };
 
 function load(): Settings {
   try {
