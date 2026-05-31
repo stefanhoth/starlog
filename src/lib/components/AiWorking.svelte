@@ -23,7 +23,7 @@
 	{#key cycle}
 		<BorderGlow
 			animated={true}
-			backgroundColor="#ffffff"
+			backgroundColor="transparent"
 			borderRadius={8}
 			glowColor="243 75 59"
 			colors={['#4f46e5', '#818cf8', '#6366f1']}
