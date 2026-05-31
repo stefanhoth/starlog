@@ -39,7 +39,7 @@ jobs:
     if: github.event_name == 'pull_request'
     container:
       # Image tag must match @playwright/test version in package.json
-      image: mcr.microsoft.com/playwright:v1.60.0-jammy
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
       options: --ipc=host
 
     steps:
