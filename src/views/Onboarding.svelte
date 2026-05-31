@@ -7,6 +7,7 @@
   import { verifyApiKey, extractCompetencies, GeminiError } from '../lib/gemini';
   import { exportData, parseBackup, applyImport, type BackupBundle } from '../lib/backup';
   import { GEMINI_MODELS, type GeminiModel } from '../lib/types';
+  import AiWorking from '../lib/components/AiWorking.svelte';
 
   // addJobMode: skip key step and go straight to job entry (for sidebar "+ add job")
   let { addJobMode = false }: { addJobMode?: boolean } = $props();
@@ -606,14 +607,16 @@
       {/if}
 
       <div class="flex gap-3">
-        <button
-          class="btn btn-primary flex-1"
-          onclick={extractJob}
-          disabled={!jobDescription.trim() || extracting}
-          data-testid="profile-submit"
-        >
-          {extracting ? 'Extracting competencies…' : 'Extract competencies →'}
-        </button>
+        <AiWorking active={extracting} class="flex-1">
+          <button
+            class="btn btn-primary w-full"
+            onclick={extractJob}
+            disabled={!jobDescription.trim() || extracting}
+            data-testid="profile-submit"
+          >
+            {extracting ? 'Extracting competencies…' : 'Extract competencies →'}
+          </button>
+        </AiWorking>
         <button class="btn btn-ghost" onclick={skipJobEntry}>Skip</button>
       </div>
 
