@@ -6,6 +6,7 @@
   import { untrack } from 'svelte';
   import { verifyApiKey, extractCompetencies, GeminiError } from '../lib/gemini';
   import { exportData, parseBackup, applyImport, type BackupBundle } from '../lib/backup';
+  import { GEMINI_MODELS, type GeminiModel } from '../lib/types';
 
   // addJobMode: skip key step and go straight to job entry (for sidebar "+ add job")
   let { addJobMode = false }: { addJobMode?: boolean } = $props();
@@ -59,8 +60,9 @@
   let showPrivacyPopover = $state(false);
   let showHowItWorks = $state(false);
 
-  // ── Step 1: API key ────────────────────────────────────────────────
+  // ── Step 1: API key & model selection ─────────────────────────────
   let apiKey = $state($settingsStore.apiKey ?? '');
+  let selectedModel = $state<GeminiModel>($settingsStore.geminiModel ?? 'gemini-2.5-flash');
   let verifying = $state(false);
   let verifyStatus = $state<'idle' | 'ok' | 'error'>('idle');
   let verifyError = $state('');
@@ -102,12 +104,16 @@
 
   function submitKey() {
     if (!canSave) return;
-    settingsStore.set({ apiKey: apiKey.trim(), consentGiven: true });
+    settingsStore.set({ apiKey: apiKey.trim(), consentGiven: true, geminiModel: selectedModel });
     if ($jobProfilesStore.length === 0) {
       navigate('add-job');
     } else {
       navigate('job-hub');
     }
+  }
+
+  function saveModelSelection() {
+    settingsStore.update(s => ({ ...s, geminiModel: selectedModel }));
   }
 
   // ── Step 2: Job entry ──────────────────────────────────────────────
@@ -215,6 +221,21 @@
         {:else if verifying}
           <p class="text-base-content/40 text-xs mt-0.5">Verifying…</p>
         {/if}
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium" for="model-select">Gemini Model</label>
+        <select
+          id="model-select"
+          class="select select-bordered w-full text-sm"
+          bind:value={selectedModel}
+          onchange={saveModelSelection}
+          data-testid="model-select"
+        >
+          {#each GEMINI_MODELS as m}
+            <option value={m.id}>{m.label}</option>
+          {/each}
+        </select>
       </div>
 
       <div class="flex flex-col gap-2">

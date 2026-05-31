@@ -39,9 +39,18 @@ export interface JobProfile {
   updatedAt: string;
 }
 
+export type GeminiModel = 'gemini-2.5-flash' | 'gemini-2.5-flash-preview-05-20' | 'gemini-3-flash-preview';
+
+export const GEMINI_MODELS: { id: GeminiModel; label: string }[] = [
+  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Default)' },
+  { id: 'gemini-2.5-flash-preview-05-20', label: 'Gemini 2.5 Flash Preview' },
+  { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview' },
+];
+
 export interface Settings {
   apiKey: string;
   consentGiven: boolean;
+  geminiModel: GeminiModel;
 }
 
 // Gemini response shape before we attach id/timestamps
