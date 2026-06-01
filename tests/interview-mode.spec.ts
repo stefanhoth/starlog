@@ -51,8 +51,9 @@ async function seedAndOpenInterview(
     mode,
   }: { stories: Story[]; profile?: JobProfile; mode: 'library' | 'profile' }
 ) {
+  const { clearStorage } = await import('./helpers');
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   await page.route('**/generativelanguage.googleapis.com/**', route =>
     route.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })

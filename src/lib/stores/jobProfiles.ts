@@ -1,43 +1,32 @@
 import { writable } from 'svelte/store';
 import type { JobProfile } from '../types';
 import { storageError } from './storageError';
+import { getDB, loadWithFallback, persistToDB } from '../db';
 
-const KEY = 'starlog_job_profiles';
+const DB_KEY = 'jobProfiles';
+const LS_KEY = 'starlog_job_profiles';
 
-let loadSucceeded = false;
-
-function load(): JobProfile[] {
+async function persist(profiles: JobProfile[]): Promise<void> {
   try {
-    const raw = localStorage.getItem(KEY);
-    loadSucceeded = true;
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    loadSucceeded = false;
-    return [];
-  }
-}
-
-function persist(profiles: JobProfile[]) {
-  if (!loadSucceeded) {
-    console.warn('[starlog] Skipping persist: initial load did not succeed. Data protected from overwrite.');
-    return;
-  }
-  try {
-    localStorage.setItem(KEY, JSON.stringify(profiles));
+    const db = await getDB();
+    await persistToDB(db, DB_KEY, profiles);
   } catch (err) {
-    const msg = err instanceof Error && err.name === 'QuotaExceededError'
-      ? 'Storage is full. Your latest changes could not be saved. Free up space or export a backup.'
-      : 'Could not save data. Your changes may be lost after reload.';
-    storageError.set(msg);
-    console.error('[starlog] persist failed:', err);
+    storageError.set('Could not save data. Your changes may be lost after reload.');
+    console.error('[starlog] jobProfiles persist failed:', err);
   }
 }
 
 function createJobProfilesStore() {
-  const { subscribe, set, update } = writable<JobProfile[]>(load());
+  const { subscribe, set, update } = writable<JobProfile[]>([]);
+
+  async function init(): Promise<void> {
+    const profiles = await loadWithFallback<JobProfile[]>(DB_KEY, LS_KEY, []);
+    set(profiles);
+  }
 
   return {
     subscribe,
+    init,
     addJobProfile(data: Omit<JobProfile, 'id' | 'createdAt' | 'updatedAt'>): JobProfile {
       const profile: JobProfile = {
         ...data,
@@ -69,13 +58,12 @@ function createJobProfilesStore() {
       });
     },
     reset() {
-      localStorage.removeItem(KEY);
       set([]);
+      persist([]);
     },
     restore(profiles: JobProfile[]) {
-      loadSucceeded = true;
-      persist(profiles);
       set(profiles);
+      persist(profiles);
     },
   };
 }

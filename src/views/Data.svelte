@@ -65,7 +65,7 @@
       <p class="text-xs font-semibold uppercase tracking-widest text-base-content/50">Storage</p>
       <p class="text-sm text-base-content">{storyCount} {storyCount === 1 ? 'story' : 'stories'}</p>
       <p class="text-sm text-base-content">{profileCount} job {profileCount === 1 ? 'profile' : 'profiles'}</p>
-      <p class="text-xs text-base-content/50">Stored in browser localStorage · no server, no account</p>
+      <p class="text-xs text-base-content/50">Stored in browser storage · no server, no account</p>
     </div>
 
     <!-- Export & Import -->

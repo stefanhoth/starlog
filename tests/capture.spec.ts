@@ -32,8 +32,9 @@ function mockGemini(page: import('@playwright/test').Page) {
 }
 
 async function setupWithKey(page: import('@playwright/test').Page) {
+  const { clearStorage } = await import('./helpers');
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   await page.reload();
   // Mock Gemini before filling key so auto-validation is intercepted
   await mockGemini(page);

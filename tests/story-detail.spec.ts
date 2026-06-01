@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { Story } from '../src/lib/types';
+import { clearStorage, readDB } from './helpers';
 
 function makeStory(overrides: Partial<Story> = {}): Story {
   return {
@@ -19,7 +20,7 @@ function makeStory(overrides: Partial<Story> = {}): Story {
 
 async function openDetail(page: import('@playwright/test').Page, story: Story) {
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   await page.route('**/generativelanguage.googleapis.com/**', route =>
     route.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
@@ -62,7 +63,7 @@ test('setting strength to great persists', async ({ page }) => {
   await openDetail(page, makeStory());
   await page.getByTestId('strength-dot').nth(2).click(); // 3rd dot = great = rank 5
   await page.getByTestId('save-btn').click();
-  const stories = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_stories') ?? '[]'));
+  const stories = await readDB(page, 'stories', []) as Story[];
   expect(stories[0].rank).toBe(5);
 });
 
@@ -72,7 +73,7 @@ test('delete shows modal, cancel keeps story', async ({ page }) => {
   await expect(page.getByTestId('delete-confirm-modal')).toBeVisible();
   await page.getByTestId('delete-cancel').click();
   await expect(page.getByTestId('delete-confirm-modal')).not.toBeVisible();
-  const stories = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_stories') ?? '[]'));
+  const stories = await readDB(page, 'stories', []);
   expect(stories).toHaveLength(1);
 });
 
@@ -81,6 +82,6 @@ test('delete confirm removes story and returns to story bank', async ({ page }) 
   await page.getByTestId('delete-btn').click();
   await page.getByTestId('delete-confirm').click();
   await expect(page.getByTestId('story-bank-view')).toBeVisible();
-  const stories = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_stories') ?? '[]'));
+  const stories = await readDB(page, 'stories', []);
   expect(stories).toHaveLength(0);
 });

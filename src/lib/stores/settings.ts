@@ -1,45 +1,34 @@
 import { writable } from 'svelte/store';
 import type { Settings } from '../types';
 import { storageError } from './storageError';
+import { getDB, loadWithFallback, persistToDB } from '../db';
 
-const KEY = 'starlog_settings';
+const DB_KEY = 'settings';
+const LS_KEY = 'starlog_settings';
 
-const defaults: Settings = { apiKey: '', consentGiven: false, geminiModel: 'gemini-3.5-flash' };
+export const defaults: Settings = { apiKey: '', consentGiven: false, geminiModel: 'gemini-3.5-flash' };
 
-let loadSucceeded = false;
-
-function load(): Settings {
+async function persist(value: Settings): Promise<void> {
   try {
-    const raw = localStorage.getItem(KEY);
-    loadSucceeded = true;
-    return raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
-  } catch {
-    loadSucceeded = false;
-    return { ...defaults };
-  }
-}
-
-function persist(value: Settings) {
-  if (!loadSucceeded) {
-    console.warn('[starlog] Skipping persist: initial load did not succeed. Data protected from overwrite.');
-    return;
-  }
-  try {
-    localStorage.setItem(KEY, JSON.stringify(value));
+    const db = await getDB();
+    await persistToDB(db, DB_KEY, value);
   } catch (err) {
-    const msg = err instanceof Error && err.name === 'QuotaExceededError'
-      ? 'Storage is full. Your latest changes could not be saved. Free up space or export a backup.'
-      : 'Could not save data. Your changes may be lost after reload.';
-    storageError.set(msg);
-    console.error('[starlog] persist failed:', err);
+    storageError.set('Could not save settings. Your changes may be lost after reload.');
+    console.error('[starlog] settings persist failed:', err);
   }
 }
 
 function createSettingsStore() {
-  const { subscribe, set, update } = writable<Settings>(load());
+  const { subscribe, set, update } = writable<Settings>({ ...defaults });
+
+  async function init(): Promise<void> {
+    const stored = await loadWithFallback<Settings | null>(DB_KEY, LS_KEY, null);
+    set(stored ? { ...defaults, ...stored } : { ...defaults });
+  }
 
   return {
     subscribe,
+    init,
     update(fn: (s: Settings) => Settings) {
       update(s => {
         const next = fn(s);
@@ -52,8 +41,8 @@ function createSettingsStore() {
       set(value);
     },
     reset() {
-      localStorage.removeItem(KEY);
       set({ ...defaults });
+      persist({ ...defaults });
     },
   };
 }

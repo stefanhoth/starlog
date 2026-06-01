@@ -18,8 +18,9 @@ function makeStory(overrides: Partial<Story> = {}): Story {
 }
 
 async function seedLibrary(page: import('@playwright/test').Page, stories: Story[]) {
+  const { clearStorage } = await import('./helpers');
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   // Seed consent so we skip onboarding entirely
   await page.evaluate((s) => {
     localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));

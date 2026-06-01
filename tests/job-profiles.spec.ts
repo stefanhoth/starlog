@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { clearStorage, readDB } from './helpers';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const COMPETENCY_FIXTURE = JSON.parse(
@@ -23,7 +24,7 @@ function mockGeminiCompetencies(page: import('@playwright/test').Page) {
 /** Navigate to job-hub with a clean slate (no profiles). */
 async function goToHub(page: import('@playwright/test').Page) {
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   await page.evaluate(() => {
     localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
   });
@@ -54,7 +55,7 @@ test('creating a profile shows competency list', async ({ page }) => {
   await expect(page.getByTestId('job-hub-view').getByText('Leadership')).toBeVisible();
 });
 
-test('created profile persists in localStorage', async ({ page }) => {
+test('created profile persists across reload', async ({ page }) => {
   await goToHub(page);
   await page.getByTestId('nav-add-job').click();
   await page.getByTestId('profile-company').fill('TestCo');
@@ -64,7 +65,7 @@ test('created profile persists in localStorage', async ({ page }) => {
   await expect(page.getByText('Leadership')).toBeVisible({ timeout: 10000 });
   await page.getByTestId('profile-save').click();
   await expect(page.getByTestId('job-hub-view')).toBeVisible();
-  const profiles = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_job_profiles') ?? '[]'));
+  const profiles = await readDB(page, 'jobProfiles', []) as { company: string; extractedCompetencies: string[] }[];
   expect(profiles[0].company).toBe('TestCo');
   expect(profiles[0].extractedCompetencies).toContain('Leadership');
 });

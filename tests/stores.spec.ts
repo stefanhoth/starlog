@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { clearStorage, readDB } from './helpers';
 
-test('stories persist across page reload', async ({ page }) => {
+test('stories persist in IndexedDB across page reload', async ({ page }) => {
   await page.goto('/');
+  await clearStorage(page);
 
-  // Seed a story directly into localStorage
   await page.evaluate(() => {
     const story = {
       id: 'test-story-1',
@@ -22,18 +23,16 @@ test('stories persist across page reload', async ({ page }) => {
 
   await page.reload();
 
-  const stories = await page.evaluate(() => {
-    const raw = localStorage.getItem('starlog_stories');
-    return raw ? JSON.parse(raw) : [];
-  });
+  const stories = await readDB(page, 'stories', []);
 
   expect(stories).toHaveLength(1);
-  expect(stories[0].id).toBe('test-story-1');
-  expect(stories[0].title).toBe('Test Story');
+  expect((stories as { id: string; title: string }[])[0].id).toBe('test-story-1');
+  expect((stories as { id: string; title: string }[])[0].title).toBe('Test Story');
 });
 
-test('job profiles persist across page reload', async ({ page }) => {
+test('job profiles persist in IndexedDB across page reload', async ({ page }) => {
   await page.goto('/');
+  await clearStorage(page);
 
   await page.evaluate(() => {
     const profile = {
@@ -51,11 +50,8 @@ test('job profiles persist across page reload', async ({ page }) => {
 
   await page.reload();
 
-  const profiles = await page.evaluate(() => {
-    const raw = localStorage.getItem('starlog_job_profiles');
-    return raw ? JSON.parse(raw) : [];
-  });
+  const profiles = await readDB(page, 'jobProfiles', []);
 
   expect(profiles).toHaveLength(1);
-  expect(profiles[0].company).toBe('Acme');
+  expect((profiles as { company: string }[])[0].company).toBe('Acme');
 });
