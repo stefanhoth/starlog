@@ -1,0 +1,5 @@
+{
+  "registries": {
+    "@sveltebits": "https://sveltebits.xyz/r/{name}.json"
+  }
+}
