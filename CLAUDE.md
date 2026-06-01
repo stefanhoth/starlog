@@ -23,3 +23,7 @@ This repo defines specialist agents in `.claude/agents/`. Their full description
 | `security-advisor` | API-key handling, user-data safety, the local-only privacy promise |
 | `senior-engineer` | architecture, Svelte 5 idioms, IndexedDB migrations, maintainability |
 | `test-engineer` | test coverage and strategy (writes & runs Playwright tests) |
+
+## What's New Changelog
+
+When opening a new PR or creating a GitHub issue for a user-facing change, check whether the What's New changelog (`src/lib/changelog.ts`) should be updated. If the change introduces a new feature, a notable improvement, or a fix that users would care about, ask the user if they want to add an entry before finalising the PR.
