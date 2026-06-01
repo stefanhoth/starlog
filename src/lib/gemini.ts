@@ -149,8 +149,12 @@ export async function extractSTAR(input: Blob | string): Promise<StoryDraft> {
         binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
       }
       const base64 = btoa(binary);
+      const mimeType = input.type || 'audio/webm';
+      if (!input.type) {
+        console.warn('Audio blob has no MIME type, falling back to audio/webm');
+      }
       parts = [
-        { inlineData: { data: base64, mimeType: input.type || 'audio/mp4' } },
+        { inlineData: { data: base64, mimeType } },
         { text: STAR_PROMPT },
       ];
     } else {
