@@ -31,7 +31,14 @@
           onchange={() => toggle(story.id)}
         />
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium truncate">{story.title}</p>
+          <div class="flex items-baseline gap-2">
+            <p class="text-sm font-medium truncate">{story.title}</p>
+            {#if story.rank !== null}
+              <span class="text-xs text-indigo-400 shrink-0">★ {story.rank}/5</span>
+            {:else}
+              <span class="text-xs text-base-content/25 shrink-0 italic">Not rated</span>
+            {/if}
+          </div>
           <div class="flex flex-wrap gap-1 mt-0.5">
             {#each story.competency_tags as tag}
               <span class="badge badge-xs badge-ghost">{tag}</span>

@@ -27,7 +27,7 @@ function createStoriesStore() {
   return {
     subscribe,
     init,
-    addStory(draft: StoryDraft, rank = 3): Story {
+    addStory(draft: StoryDraft, rank: number | null = null): Story {
       const story: Story = {
         ...draft,
         id: crypto.randomUUID(),

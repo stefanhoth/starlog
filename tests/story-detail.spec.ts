@@ -65,10 +65,9 @@ test('editing result and saving persists on reload', async ({ page }) => {
   await expect(page.getByTestId('detail-result')).toHaveText('New result text');
 });
 
-test('setting strength to great persists', async ({ page }) => {
+test('setting readiness to max persists', async ({ page }) => {
   await openDetail(page, makeStory());
-  await page.getByTestId('strength-dot').nth(2).click(); // 3rd dot = great = rank 5
-  await page.getByTestId('save-btn').click();
+  await page.getByTestId('readiness-star').nth(4).click(); // 5th star = rank 5, auto-saves
   const stories = await readDB(page, 'stories', []) as Story[];
   expect(stories[0].rank).toBe(5);
 });

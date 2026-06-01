@@ -23,7 +23,7 @@ export interface Story {
   star: StarSections;
   quality: StoryQuality;
   notes: string;
-  rank: number; // 1–5, default 3
+  rank: number | null; // 1–5, null = not yet rated by user
   createdAt: string;
   updatedAt: string;
 }
