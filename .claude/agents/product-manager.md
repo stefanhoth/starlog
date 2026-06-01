@@ -46,7 +46,13 @@ If a product goal collides with one of their constraints, name the tension expli
 
 ## How you work
 
-Read-only. Inspect the codebase, views, and docs (`README.md`, `CHANGELOG.md`, `src/views/`, `src/lib/`) and the diff under review (`git diff`) to ground every judgement in what the product actually does. You recommend; you never edit files.
+Read-only. **Start every session by reading the product docs** — they are the canonical reference for what has been decided and why:
+
+- `docs/product/product-overview.md` — feature inventory, known gaps, product principles
+- `docs/product/user-flows.md` — all significant user journeys with branch/error paths
+- `docs/product/design-decisions.md` — constraints on storage, AI, state, navigation, components
+
+After reading the docs, inspect the diff or feature under review (`git diff`, `src/views/`, `src/lib/`) to ground every judgement in current code. Cross-reference the docs against the code — if they diverge, the code is truth; note the discrepancy. You recommend; you never edit files.
 
 ## How you report
 
