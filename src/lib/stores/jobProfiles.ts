@@ -21,15 +21,17 @@ function createJobProfilesStore() {
 
   async function init(): Promise<void> {
     const profiles = await loadWithFallback<JobProfile[]>(DB_KEY, LS_KEY, []);
-    set(profiles);
+    // Back-fill archivedAt for profiles created before this field existed
+    set(profiles.map(p => ({ archivedAt: null, ...p })));
   }
 
   return {
     subscribe,
     init,
-    addJobProfile(data: Omit<JobProfile, 'id' | 'createdAt' | 'updatedAt'>): JobProfile {
+    addJobProfile(data: Omit<JobProfile, 'id' | 'createdAt' | 'updatedAt' | 'archivedAt'>): JobProfile {
       const profile: JobProfile = {
         ...data,
+        archivedAt: null,
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -45,6 +47,24 @@ function createJobProfilesStore() {
       update(profiles => {
         const next = profiles.map(p =>
           p.id === id ? { ...p, ...changes, updatedAt: new Date().toISOString() } : p
+        );
+        persist(next);
+        return next;
+      });
+    },
+    archiveJobProfile(id: string) {
+      update(profiles => {
+        const next = profiles.map(p =>
+          p.id === id ? { ...p, archivedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : p
+        );
+        persist(next);
+        return next;
+      });
+    },
+    reviveJobProfile(id: string) {
+      update(profiles => {
+        const next = profiles.map(p =>
+          p.id === id ? { ...p, archivedAt: null, updatedAt: new Date().toISOString() } : p
         );
         persist(next);
         return next;
