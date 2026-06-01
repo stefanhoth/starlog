@@ -1,0 +1,17 @@
+[
+  {
+    "id": "senior-em-tech",
+    "description": "Senior Engineering Manager at a B2B SaaS company",
+    "input": "We are looking for a Senior Engineering Manager to lead two teams of 6-8 engineers building our core platform. You will partner closely with product and design to define roadmap priorities, remove blockers, and ensure teams consistently deliver. You have experience growing engineers at all levels, handling difficult feedback conversations, and navigating cross-functional dependencies in a fast-moving environment. You are comfortable operating with ambiguity and making decisions when alignment is hard to achieve. Prior experience managing managers is a plus."
+  },
+  {
+    "id": "staff-engineer-infra",
+    "description": "Staff Engineer, Infrastructure",
+    "input": "As Staff Engineer on the Infrastructure team, you will drive technical strategy for reliability and developer productivity across the engineering org. You will identify systemic issues, propose and lead large multi-quarter initiatives, and influence peers and leadership without direct authority. We expect you to mentor senior engineers, contribute to hiring decisions, and represent engineering in cross-functional planning sessions. Strong communication skills and the ability to build alignment around technical direction are essential."
+  },
+  {
+    "id": "director-product-eng",
+    "description": "Director of Engineering, Product",
+    "input": "The Director of Engineering, Product will oversee three squads responsible for our customer-facing product features. You will own the engineering roadmap in partnership with the VP of Product, develop your managers, and be accountable for quarterly delivery targets. This role requires experience scaling teams through growth phases, resolving conflicts between teams and stakeholders, and building a culture of ownership and continuous improvement. You will also be expected to interface directly with key customers and contribute to strategic planning at the leadership level."
+  }
+]

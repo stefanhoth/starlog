@@ -1,0 +1,32 @@
+[
+  {
+    "id": "en-good-3-sentence",
+    "lang": "en",
+    "description": "Good 3-sentence English story",
+    "input": "When I joined the payments team, the checkout flow had a 12% cart abandonment spike caused by a timeout bug in our third-party processor integration. I was the lead engineer responsible for diagnosing and fixing the issue within a weekend before the Monday sale event. I traced the root cause to an undocumented 30-second SDK timeout, patched it with a configurable retry wrapper, deployed behind a feature flag, and monitored error rates in real time — reducing abandonment back to baseline by Sunday evening."
+  },
+  {
+    "id": "en-weak-vague",
+    "lang": "en",
+    "description": "Weak vague input — minimal detail",
+    "input": "Ummm I did a project once where I helped the team with something technical and it went well I think."
+  },
+  {
+    "id": "de-good-detailed",
+    "lang": "de",
+    "description": "Longer detailed German story",
+    "input": "Ich war Engineering Manager bei einem mittelgroßen SaaS-Unternehmen als wir merkten, dass unser Deployment-Prozess zu einem echten Flaschenhals wurde. Wir hatten nur zwei erfahrene Entwickler, die Deployments durchführen konnten, und das führte zu langen Wartezeiten und Frustration im Team. Meine Aufgabe war es, diesen Prozess zu demokratisieren, ohne die Stabilität unserer Produktionsumgebung zu gefährden. Ich habe zunächst alle bestehenden Deployment-Schritte dokumentiert, dann gemeinsam mit dem Team ein Self-Service-Portal in unserem internen Tooling aufgebaut, Schulungen für alle Entwickler durchgeführt und ein Peer-Review-System eingeführt, bei dem jedes Deployment von einem zweiten Kollegen bestätigt werden musste. Nach drei Monaten konnten alle acht Entwickler eigenständig deployen, die durchschnittliche Zeit vom Merge bis zum Deployment sank von vier Stunden auf 45 Minuten, und wir hatten keinen einzigen Produktionsausfall durch Deployment-Fehler."
+  },
+  {
+    "id": "en-medium-missing-result",
+    "lang": "en",
+    "description": "Medium quality — actions clear but result is vague",
+    "input": "Our data pipeline was failing silently and corrupting downstream reports. As the data engineering lead, I was on the hook to fix it and prevent recurrence. I added schema validation checks at every ingestion stage, wrote alerting rules that paged on-call when a batch failed, and updated our runbook with remediation steps. Things got better after that."
+  },
+  {
+    "id": "de-short-single-action",
+    "lang": "de",
+    "description": "Short German story with only one explicit action",
+    "input": "In meiner Zeit als Teamlead hat ein wichtiger Mitarbeiter plötzlich gekündigt und das Team war kurz vor einem großen Release. Ich musste dafür sorgen, dass der Release trotzdem termingerecht stattfinden kann. Ich habe die verbleibenden Aufgaben auf das Team neu verteilt."
+  }
+]
