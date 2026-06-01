@@ -22,7 +22,7 @@ function createJobProfilesStore() {
   async function init(): Promise<void> {
     const profiles = await loadWithFallback<JobProfile[]>(DB_KEY, LS_KEY, []);
     // Back-fill archivedAt for profiles created before this field existed
-    set(profiles.map(p => ({ archivedAt: null, ...p })));
+    set(profiles.map(p => ({ ...p, archivedAt: p.archivedAt ?? null })));
   }
 
   return {
