@@ -3,6 +3,7 @@
   import { navigate } from '../lib/stores/view';
   import { COMPETENCIES } from '../lib/competencies';
   import StarEditor from '../lib/components/StarEditor.svelte';
+  import type { StoryQuality } from '../lib/types';
 
   const storyId = sessionStorage.getItem('starlog_active_story') ?? '';
   const original = $storiesStore.find(s => s.id === storyId);
@@ -17,7 +18,8 @@
   let tags      = $state<string[]>([...(original?.competency_tags ?? [])]);
   let notes     = $state(original?.notes ?? '');
   let rank      = $state<number | null>(original?.rank ?? null);
-  let quality   = $state({ ...(original?.quality ?? { situation: 'medium', task: 'medium', action: 'medium', result: 'medium', notes: '' }) });
+  const DEFAULT_QUALITY: StoryQuality = { situation: 'medium', task: 'medium', action: 'medium', result: 'medium', notes: '' };
+  let quality   = $state<StoryQuality>({ ...(original?.quality ?? DEFAULT_QUALITY) });
   let showTagPicker     = $state(false);
   let showDeleteConfirm = $state(false);
   let starEditor: { commitPending: () => void } | undefined = $state();
