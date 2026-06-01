@@ -16,6 +16,9 @@ dist-ssr
 test-results/
 playwright-report/
 
+# Claude Code worktree metadata
+.claude/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
