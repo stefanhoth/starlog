@@ -77,6 +77,42 @@ test('tag picker adds and removes competency chips', async ({ page }) => {
   // Leadership chip should be gone or added depending on initial state
 });
 
+test('inline editor auto-focuses on open', async ({ page }) => {
+  await goToReview(page);
+  await page.getByTestId('section-situation').click();
+  await expect(page.getByTestId('section-situation')).toBeFocused();
+});
+
+test('Esc dismisses inline editor immediately when nothing has changed', async ({ page }) => {
+  await goToReview(page);
+  await page.getByTestId('section-situation').click();
+  await page.keyboard.press('Escape');
+  const tag = await page.getByTestId('section-situation').evaluate(el => el.tagName.toLowerCase());
+  expect(tag).toBe('button');
+});
+
+test('Esc shows confirm when field is dirty; accepting discards changes', async ({ page }) => {
+  await goToReview(page);
+  await page.getByTestId('section-situation').click();
+  await page.getByTestId('section-situation').fill('DIRTY TEXT');
+  page.once('dialog', dialog => dialog.accept());
+  await page.keyboard.press('Escape');
+  const tag = await page.getByTestId('section-situation').evaluate(el => el.tagName.toLowerCase());
+  expect(tag).toBe('button');
+  await expect(page.getByTestId('section-situation')).not.toContainText('DIRTY TEXT');
+});
+
+test('Esc shows confirm when field is dirty; dismissing keeps editor focused', async ({ page }) => {
+  await goToReview(page);
+  await page.getByTestId('section-situation').click();
+  await page.getByTestId('section-situation').fill('DIRTY TEXT');
+  page.once('dialog', dialog => dialog.dismiss());
+  await page.keyboard.press('Escape');
+  const tag = await page.getByTestId('section-situation').evaluate(el => el.tagName.toLowerCase());
+  expect(tag).toBe('textarea');
+  await expect(page.getByTestId('section-situation')).toBeFocused();
+});
+
 test('discard returns to capture without saving', async ({ page }) => {
   await goToReview(page);
   const storiesBefore = await page.evaluate(() => {
