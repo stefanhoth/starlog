@@ -29,7 +29,7 @@
         <ul class="space-y-4">
           {#each entry.changes as item}
             <li class="flex gap-3">
-              <span class="mt-0.5 text-sm text-primary shrink-0">•</span>
+              <span class="text-sm text-primary shrink-0 leading-none mt-[3px]">•</span>
               <div>
                 <p class="text-sm font-medium text-base-content leading-snug">{item.title}</p>
                 <p class="text-xs text-base-content/55 mt-0.5 leading-relaxed">{item.detail}</p>
