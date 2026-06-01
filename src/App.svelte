@@ -14,6 +14,10 @@
   import StoryBank from './views/StoryBank.svelte';
   import InterviewMode from './views/InterviewMode.svelte';
   import Data from './views/Data.svelte';
+  import WhatsNewPanel from './lib/components/WhatsNewPanel.svelte';
+  import { lastSeenDate, initWhatsNew } from './lib/stores/whatsNew';
+  import { CHANGELOG } from './lib/changelog';
+  import { onMount } from 'svelte';
 
   // Redirect to onboarding if not yet configured; existing users go to job hub.
   // Guard against pushing a redundant history entry when URL already resolved correctly.
@@ -50,6 +54,13 @@
     $currentView === 'interview' ||
     ($currentView === 'onboarding' && !$settingsStore.consentGiven)
   );
+
+  let showWhatsNew = $state(false);
+  const hasUnseen = $derived($lastSeenDate !== CHANGELOG[0]?.date);
+
+  onMount(() => {
+    initWhatsNew();
+  });
 </script>
 
 {#if $storageError}
@@ -165,6 +176,16 @@
         >
           ⚙ Settings
         </button>
+        <button
+          data-testid="whats-new-btn"
+          class="btn btn-ghost btn-sm justify-start gap-2 relative w-full"
+          onclick={() => showWhatsNew = true}
+        >
+          What's New
+          {#if hasUnseen}
+            <span data-testid="whats-new-badge" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary"></span>
+          {/if}
+        </button>
         <div class="px-1 pt-1">
           <a
             href="https://github.com/stefanhoth/starlog/releases/tag/{__APP_VERSION__}"
@@ -215,6 +236,10 @@
         {/if}
       {/if}
     </main>
+
+    {#if showWhatsNew}
+      <WhatsNewPanel onClose={() => showWhatsNew = false} />
+    {/if}
 
     <!-- ── Mobile bottom nav (mobile only) ──────────────────────────── -->
     <nav
