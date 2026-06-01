@@ -306,7 +306,7 @@
       </div>
 
       <!-- Right: key form -->
-      <div class="bg-base-200 border-l border-base-300 flex items-center justify-center p-8 lg:p-10">
+      <div class="bg-base-200 border-l border-base-300 flex items-center justify-center p-8 lg:p-10 lg:sticky lg:top-0 lg:h-screen">
         <div class="w-full max-w-sm flex flex-col gap-5">
           <div>
             <div class="flex items-center gap-2">
