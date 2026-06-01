@@ -50,11 +50,16 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   throw new GeminiError('Max retries exceeded');
 }
 
-function getModel() {
+function getModel(creative = false) {
   const { apiKey, geminiModel } = get(settingsStore);
   if (!apiKey) throw new GeminiError('No API key configured. Please complete setup.');
   const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({ model: geminiModel ?? 'gemini-3.5-flash' });
+  return genAI.getGenerativeModel({
+    model: geminiModel ?? 'gemini-3.5-flash',
+    generationConfig: creative
+      ? { temperature: 0.8 }
+      : { responseMimeType: 'application/json', temperature: 0.2 },
+  });
 }
 
 const STAR_PROMPT = `You are a career coach helping a job applicant structure their interview stories.
@@ -166,7 +171,7 @@ export async function extractCompetencies(jobDescription: string): Promise<strin
 }
 
 export async function generateInspirationQuestions(competency: string): Promise<string[]> {
-  const model = getModel();
+  const model = getModel(true);
 
   const prompt = `You are helping a professional recall real work experiences for job interviews.
 Generate exactly 3 short, punchy questions for the competency: "${competency}".
