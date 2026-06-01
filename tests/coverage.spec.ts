@@ -72,20 +72,19 @@ test('unmapped competency shows draft button', async ({ page }) => {
   await expect(firstRow.getByTestId('draft-btn')).toBeVisible();
 });
 
-test('clicking map-existing-btn opens story picker modal', async ({ page }) => {
+test('clicking map-existing-btn opens story map modal', async ({ page }) => {
   const story = makeStory();
   await openJobHub(page, makeProfile([story]), [story]);
   await page.getByTestId('map-existing-btn').first().click();
-  await expect(page.getByTestId('story-picker')).toBeVisible();
+  await expect(page.getByTestId('story-map-modal')).toBeVisible();
 });
 
-test('selecting story in picker marks competency as covered', async ({ page }) => {
+test('selecting story in modal marks competency as covered', async ({ page }) => {
   const story = makeStory({ id: 'story-1' });
   await openJobHub(page, makeProfile([story]), [story]);
   await page.getByTestId('map-existing-btn').first().click();
-  await page.getByTestId('story-picker').locator('input[type="checkbox"]').first().check();
-  // Save the mapping
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByTestId('story-add-btn').first().click();
+  await page.getByTestId('story-map-save-btn').click();
   // First competency row should now show edit-mapping-btn (covered state)
   await expect(page.getByTestId('competency-row').first().getByTestId('edit-mapping-btn')).toBeVisible();
 });
@@ -95,12 +94,12 @@ test('same story can be mapped to two competencies', async ({ page }) => {
   await openJobHub(page, makeProfile([story]), [story]);
   // Map to first competency
   await page.getByTestId('map-existing-btn').first().click();
-  await page.getByTestId('story-picker').locator('input[type="checkbox"]').first().check();
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByTestId('story-add-btn').first().click();
+  await page.getByTestId('story-map-save-btn').click();
   // Map to second competency
   await page.getByTestId('map-existing-btn').first().click();
-  await page.getByTestId('story-picker').locator('input[type="checkbox"]').first().check();
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByTestId('story-add-btn').first().click();
+  await page.getByTestId('story-map-save-btn').click();
   // Both first two rows should now be covered (show edit-mapping-btn)
   await expect(page.getByTestId('edit-mapping-btn')).toHaveCount(2);
 });

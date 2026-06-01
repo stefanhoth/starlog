@@ -2,7 +2,7 @@
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { storiesStore } from '../lib/stores/stories';
   import { activeProfileId, navigate } from '../lib/stores/view';
-  import StoryPicker from '../lib/components/StoryPicker.svelte';
+  import StoryMapModal from '../lib/components/StoryMapModal.svelte';
   import type { Story } from '../lib/types';
 
   const profile = $derived(
@@ -36,20 +36,28 @@
 
   // Map existing story modal
   let mapComp = $state<string | null>(null);
-  let mapSelected = $state<string[]>([]);
 
   function openMapModal(comp: string) {
     if (!profile) return;
     mapComp = comp;
-    mapSelected = [...(profile.competencyMap[comp] ?? [])];
   }
 
-  function saveMapping() {
+  function saveMapping(ids: string[]) {
     if (!profile || !mapComp) return;
     jobProfilesStore.updateJobProfile(profile.id, {
-      competencyMap: { ...profile.competencyMap, [mapComp]: mapSelected },
+      competencyMap: { ...profile.competencyMap, [mapComp]: ids },
     });
     mapComp = null;
+  }
+
+  function reorderMapping(comp: string, fromIndex: number, toIndex: number) {
+    if (!profile) return;
+    const ids = [...(profile.competencyMap[comp] ?? [])];
+    const [moved] = ids.splice(fromIndex, 1);
+    ids.splice(toIndex, 0, moved);
+    jobProfilesStore.updateJobProfile(profile.id, {
+      competencyMap: { ...profile.competencyMap, [comp]: ids },
+    });
   }
 
   // Expandable ranked list per competency
@@ -236,6 +244,16 @@
                         <span class="text-base-content/60">{s.title}</span>
                       {/if}
                     </span>
+                    {#if mappedIds.length > 1}
+                      <div class="flex gap-0.5 shrink-0">
+                        {#if i > 0}
+                          <button class="btn btn-ghost btn-xs px-1 h-5 min-h-0" onclick={() => reorderMapping(comp, i, i - 1)} title="Move up">↑</button>
+                        {/if}
+                        {#if i < mappedIds.length - 1}
+                          <button class="btn btn-ghost btn-xs px-1 h-5 min-h-0" onclick={() => reorderMapping(comp, i, i + 1)} title="Move down">↓</button>
+                        {/if}
+                      </div>
+                    {/if}
                   </div>
                 {/if}
               {/each}
@@ -349,26 +367,12 @@
   </div>
 {/if}
 
-<!-- Map existing modal -->
-{#if mapComp !== null}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onkeydown={(e) => e.key === 'Escape' && (mapComp = null)}
-    onclick={(e) => e.target === e.currentTarget && (mapComp = null)}
-  >
-    <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-5 flex flex-col gap-4">
-      <div>
-        <h3 class="font-semibold text-base">Map stories to <em class="not-italic text-primary">{mapComp}</em></h3>
-        <p class="text-xs text-base-content/50 mt-0.5">First selected = go-to answer. Others = backups.</p>
-      </div>
-      <StoryPicker selectedIds={mapSelected} onchange={(ids) => mapSelected = ids} />
-      <div class="flex gap-2">
-        <button class="btn btn-primary flex-1 btn-sm" onclick={saveMapping}>Save</button>
-        <button class="btn btn-ghost btn-sm" onclick={() => mapComp = null}>Cancel</button>
-      </div>
-    </div>
-  </div>
+<!-- Story map modal -->
+{#if mapComp !== null && profile}
+  <StoryMapModal
+    comp={mapComp}
+    initialIds={profile.competencyMap[mapComp] ?? []}
+    onSave={saveMapping}
+    onCancel={() => mapComp = null}
+  />
 {/if}
