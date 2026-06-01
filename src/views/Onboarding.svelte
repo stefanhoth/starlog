@@ -400,7 +400,7 @@
           <h3 id="privacy-heading" class="font-semibold text-base">Your data never leaves your device</h3>
           <button class="btn btn-xs btn-ghost shrink-0 -mt-1 -mr-1" onclick={() => showPrivacyPopover = false} aria-label="Close">✕</button>
         </div>
-        <p class="text-base-content/60 leading-relaxed">StarLog stores everything — your stories, job profiles, and API key — in your browser's <code class="bg-base-200 px-1 rounded text-xs">localStorage</code>. This means:</p>
+        <p class="text-base-content/60 leading-relaxed">StarLog stores everything — your stories, job profiles, and API key — in your browser's local storage (IndexedDB). This means:</p>
         <ul class="space-y-1.5 text-base-content/70">
           <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>No account required. No email, no password.</span></li>
           <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>No server. There is no StarLog backend that receives or stores your data.</span></li>
