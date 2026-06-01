@@ -159,12 +159,18 @@ export async function verifyApiKey(key: string): Promise<void> {
   }
 }
 
+const MAX_JD_CHARS = 12_000;
+
 export async function extractCompetencies(jobDescription: string): Promise<string[]> {
   const model = getModel();
+  const trimmed =
+    jobDescription.length > MAX_JD_CHARS
+      ? jobDescription.slice(0, MAX_JD_CHARS) + '\n[truncated]'
+      : jobDescription;
 
   return withRetry(async () => {
     const result = await model.generateContent([
-      { text: `${COMPETENCY_PROMPT}\n\nJob description:\n${jobDescription}` },
+      { text: `${COMPETENCY_PROMPT}\n\nJob description:\n${trimmed}` },
     ]);
     return parseJson<string[]>(result.response.text());
   });
