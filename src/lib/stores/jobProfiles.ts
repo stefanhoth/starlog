@@ -1,19 +1,36 @@
 import { writable } from 'svelte/store';
 import type { JobProfile } from '../types';
+import { storageError } from './storageError';
 
 const KEY = 'starlog_job_profiles';
+
+let loadSucceeded = false;
 
 function load(): JobProfile[] {
   try {
     const raw = localStorage.getItem(KEY);
+    loadSucceeded = true;
     return raw ? JSON.parse(raw) : [];
   } catch {
+    loadSucceeded = false;
     return [];
   }
 }
 
 function persist(profiles: JobProfile[]) {
-  localStorage.setItem(KEY, JSON.stringify(profiles));
+  if (!loadSucceeded) {
+    console.warn('[starlog] Skipping persist: initial load did not succeed. Data protected from overwrite.');
+    return;
+  }
+  try {
+    localStorage.setItem(KEY, JSON.stringify(profiles));
+  } catch (err) {
+    const msg = err instanceof Error && err.name === 'QuotaExceededError'
+      ? 'Storage is full. Your latest changes could not be saved. Free up space or export a backup.'
+      : 'Could not save data. Your changes may be lost after reload.';
+    storageError.set(msg);
+    console.error('[starlog] persist failed:', err);
+  }
 }
 
 function createJobProfilesStore() {
@@ -56,6 +73,7 @@ function createJobProfilesStore() {
       set([]);
     },
     restore(profiles: JobProfile[]) {
+      loadSucceeded = true;
       persist(profiles);
       set(profiles);
     },

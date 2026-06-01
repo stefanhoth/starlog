@@ -1,19 +1,39 @@
 import { writable, get } from 'svelte/store';
 import type { Story, StoryDraft } from '../types';
+import { storageError } from './storageError';
 
 const KEY = 'starlog_stories';
+
+// Tracks whether the initial load from localStorage succeeded.
+// If it failed (exception), we must NOT write back — that would overwrite
+// potentially-intact data on disk with an empty in-memory state.
+let loadSucceeded = false;
 
 function load(): Story[] {
   try {
     const raw = localStorage.getItem(KEY);
+    loadSucceeded = true;
     return raw ? JSON.parse(raw) : [];
   } catch {
+    loadSucceeded = false;
     return [];
   }
 }
 
 function persist(stories: Story[]) {
-  localStorage.setItem(KEY, JSON.stringify(stories));
+  if (!loadSucceeded) {
+    console.warn('[starlog] Skipping persist: initial load did not succeed. Data protected from overwrite.');
+    return;
+  }
+  try {
+    localStorage.setItem(KEY, JSON.stringify(stories));
+  } catch (err) {
+    const msg = err instanceof Error && err.name === 'QuotaExceededError'
+      ? 'Storage is full. Your latest changes could not be saved. Free up space or export a backup.'
+      : 'Could not save data. Your changes may be lost after reload.';
+    storageError.set(msg);
+    console.error('[starlog] persist failed:', err);
+  }
 }
 
 function createStoriesStore() {
@@ -61,6 +81,7 @@ function createStoriesStore() {
       set([]);
     },
     restore(stories: Story[]) {
+      loadSucceeded = true;
       persist(stories);
       set(stories);
     },
