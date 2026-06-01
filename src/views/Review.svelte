@@ -8,12 +8,6 @@
 
   const QUALITY_ICON: Record<string, string> = { high: '🟢', medium: '🟡', low: '🔴' };
 
-  const STRENGTH_STATES = [
-    { rank: 1, label: 'thin',  dot: 'bg-red-400    border-red-400'    },
-    { rank: 3, label: 'ok',    dot: 'bg-amber-400  border-amber-400'  },
-    { rank: 5, label: 'great', dot: 'bg-emerald-400 border-emerald-400' },
-  ];
-
   const COACHING: Record<string, string> = {
     situation: 'Set the scene: name the company/team, time period, and what was at stake.',
     task:      'Who set this goal? Naming the stakeholder makes the stakes obvious.',
@@ -38,7 +32,7 @@
   let result    = $state(initial.star.result);
   let tags      = $state<string[]>([...initial.competency_tags]);
   let quality   = $state({ ...initial.quality });
-  let rank      = $state(3);
+  let rank      = $state<number | null>(null);
   let showTagPicker = $state(false);
   let showAIBanner  = $state(true);
 
@@ -48,7 +42,13 @@
     gapProfileId ? ($jobProfilesStore.find(p => p.id === gapProfileId) ?? null) : null
   );
 
-  const activeStrengthIdx = $derived(rank <= 2 ? 0 : rank <= 4 ? 1 : 2);
+  const READINESS_STATES = [
+    { rank: 1, label: 'not ready',  stars: 1 },
+    { rank: 2, label: 'shaky',      stars: 2 },
+    { rank: 3, label: 'ok',         stars: 3 },
+    { rank: 4, label: 'confident',  stars: 4 },
+    { rank: 5, label: 'nailed it',  stars: 5 },
+  ];
 
   // ── Auto-focus helper ────────────────────────────────────────────────
   let activeInputRef: HTMLElement | null = null;
@@ -251,22 +251,8 @@
     </div>
   {/if}
 
-  <!-- Strength + Tags -->
+  <!-- Tags -->
   <div class="flex flex-wrap items-center gap-3 mb-5">
-    <div class="flex items-center gap-2">
-      <span class="text-xs text-base-content/50">strength</span>
-      <div class="flex items-center gap-1.5 bg-base-200 rounded-full px-2.5 py-1">
-        {#each STRENGTH_STATES as s, i}
-          <button
-            class="w-3.5 h-3.5 rounded-full border-2 transition-colors {activeStrengthIdx === i ? s.dot : 'border-base-300 bg-transparent'}"
-            onclick={() => rank = s.rank}
-            aria-label="Strength: {s.label}"
-            data-testid="strength-dot"
-          ></button>
-        {/each}
-      </div>
-      <span class="text-xs font-medium">{STRENGTH_STATES[activeStrengthIdx].label}</span>
-    </div>
     <div class="flex flex-wrap items-center gap-1.5">
       {#each tags as tag, i}
         <span class="badge {i === 0 ? 'badge-primary' : 'badge-ghost'} gap-1">
@@ -470,5 +456,29 @@
       <span>💡 {quality.notes}</span>
     </div>
   {/if}
+
+  <!-- Your Readiness — user-owned rating, visually separated from AI quality above -->
+  <div class="mt-5 pt-4 border-t border-base-300" data-testid="readiness-section">
+    <p class="text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-2">Your readiness</p>
+    <p class="text-xs text-base-content/40 mb-3">How confident are you telling this story out loud?</p>
+    <div class="flex items-center gap-3 flex-wrap">
+      <div class="flex gap-1">
+        {#each READINESS_STATES as s}
+          <button
+            class="text-xl transition-colors {rank !== null && rank >= s.rank ? 'text-indigo-500' : 'text-base-content/20'} hover:text-indigo-400"
+            onclick={() => rank = rank === s.rank && s.rank === rank ? null : s.rank}
+            aria-label="Readiness: {s.label}"
+            data-testid="readiness-star"
+          >★</button>
+        {/each}
+      </div>
+      {#if rank !== null}
+        <span class="text-sm font-medium text-indigo-600">{READINESS_STATES[rank - 1].label}</span>
+        <button class="text-xs text-base-content/30 hover:text-base-content/60 transition-colors" onclick={() => rank = null}>clear</button>
+      {:else}
+        <span class="text-sm text-base-content/30 italic">not yet rated</span>
+      {/if}
+    </div>
+  </div>
 
 </div>

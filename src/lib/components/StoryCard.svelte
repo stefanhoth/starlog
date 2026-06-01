@@ -58,15 +58,19 @@
       {/each}
     </div>
 
-    <!-- Strength + date -->
+    <!-- Readiness + date -->
     <div class="flex items-center justify-between">
-      <div class="flex items-center gap-1" title="Your confidence rating for this story (1–5)">
-        <span class="text-xs text-slate-400">Strength:</span>
-        <div class="flex gap-0.5">
-          {#each Array(5) as _, i}
-            <span class="text-xs {i < story.rank ? 'text-amber-400' : 'text-slate-200'}">★</span>
-          {/each}
-        </div>
+      <div class="flex items-center gap-1" title="Your readiness to tell this story">
+        <span class="text-xs text-slate-400">Readiness:</span>
+        {#if story.rank !== null}
+          <div class="flex gap-0.5">
+            {#each Array(5) as _, i}
+              <span class="text-xs {i < story.rank ? 'text-indigo-400' : 'text-slate-200'}">★</span>
+            {/each}
+          </div>
+        {:else}
+          <span class="text-xs text-slate-300 italic">not yet rated</span>
+        {/if}
       </div>
       <span class="text-xs text-slate-400">
         {new Date(story.createdAt).toLocaleDateString()}

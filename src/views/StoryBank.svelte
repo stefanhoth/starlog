@@ -5,17 +5,25 @@
   import type { Story } from '../lib/types';
 
   let search = $state('');
+  let sortByReadiness = $state(true); // default: least-ready first
   let popoverStoryId = $state<string | null>(null);
 
+  // null rank sorts first (needs attention), then rank 1..5
+  function readinessSortKey(s: Story): number {
+    return s.rank === null ? -1 : s.rank;
+  }
+
   const filtered = $derived(
-    $storiesStore.filter(s => {
-      if (search.length < 2) return true;
-      const q = search.toLowerCase();
-      return [s.title, ...s.competency_tags, s.star.situation, s.star.result]
-        .join(' ')
-        .toLowerCase()
-        .includes(q);
-    })
+    $storiesStore
+      .filter(s => {
+        if (search.length < 2) return true;
+        const q = search.toLowerCase();
+        return [s.title, ...s.competency_tags, s.star.situation, s.star.result]
+          .join(' ')
+          .toLowerCase()
+          .includes(q);
+      })
+      .sort((a, b) => sortByReadiness ? readinessSortKey(a) - readinessSortKey(b) : 0)
   );
 
   function getJobMappings(story: Story) {
@@ -32,6 +40,11 @@
     sessionStorage.setItem('starlog_interview_mode', 'library');
     sessionStorage.setItem('starlog_interview_submode', 'read');
     navigate('interview');
+  }
+
+  function readinessLabel(rank: number | null): string {
+    if (rank === null) return 'not rated';
+    return `${rank}/5`;
   }
 </script>
 
@@ -52,7 +65,7 @@
     </div>
   </div>
 
-  <div class="mb-4">
+  <div class="flex items-center gap-3 mb-4">
     <input
       type="search"
       class="input input-bordered input-sm w-full max-w-sm"
@@ -60,6 +73,14 @@
       bind:value={search}
       data-testid="search-input"
     />
+    <button
+      class="btn btn-sm {sortByReadiness ? 'btn-outline btn-primary' : 'btn-ghost'} gap-1 shrink-0"
+      onclick={() => sortByReadiness = !sortByReadiness}
+      title="Sort least-ready first (unrated stories first, then rank 1→5)"
+      data-testid="sort-readiness-btn"
+    >
+      ★ {sortByReadiness ? 'Least ready first' : 'Default order'}
+    </button>
   </div>
 
   {#if $storiesStore.length === 0}
@@ -70,9 +91,10 @@
     </div>
   {:else}
     <div class="border border-base-300 rounded-xl overflow-hidden bg-base-100">
-      <div class="hidden sm:grid grid-cols-[2fr_1.2fr_1.8fr] px-4 py-2 bg-base-200 border-b border-base-300 text-xs font-semibold uppercase tracking-wide text-base-content/50">
+      <div class="hidden sm:grid grid-cols-[2fr_1fr_1fr_1.6fr] px-4 py-2 bg-base-200 border-b border-base-300 text-xs font-semibold uppercase tracking-wide text-base-content/50">
         <span>Story</span>
         <span>Tags</span>
+        <span>Readiness</span>
         <span>Used in</span>
       </div>
 
@@ -83,7 +105,7 @@
 
         <div
           class="flex flex-col gap-1 px-4 py-3 border-b border-base-200 last:border-0 hover:bg-base-50 cursor-pointer transition-colors
-            sm:grid sm:grid-cols-[2fr_1.2fr_1.8fr] sm:items-start sm:gap-0"
+            sm:grid sm:grid-cols-[2fr_1fr_1fr_1.6fr] sm:items-start sm:gap-0"
           onclick={() => openStory(story.id)}
           role="button"
           tabindex="0"
@@ -101,6 +123,18 @@
             {/each}
             {#if story.competency_tags.length > 3}
               <span class="badge badge-ghost badge-xs">+{story.competency_tags.length - 3}</span>
+            {/if}
+          </div>
+
+          <div class="hidden sm:flex items-center gap-1">
+            {#if story.rank !== null}
+              <div class="flex gap-0.5">
+                {#each Array(5) as _, i}
+                  <span class="text-xs {i < story.rank ? 'text-indigo-400' : 'text-base-content/15'}">★</span>
+                {/each}
+              </div>
+            {:else}
+              <span class="text-xs text-base-content/30 italic">not rated</span>
             {/if}
           </div>
 

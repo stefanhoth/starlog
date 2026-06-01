@@ -51,7 +51,8 @@
     return text.length > max ? text.slice(0, max) + '…' : text;
   }
 
-  function rankDots(rank: number): string {
+  function rankDots(rank: number | null): string {
+    if (rank === null) return '○○○○○';
     return '●'.repeat(rank) + '○'.repeat(5 - rank);
   }
 
