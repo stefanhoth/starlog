@@ -10,11 +10,7 @@ export type View =
   | 'review'
   | 'story-detail'
   | 'interview'
-  | 'data'
-  // legacy — kept for backward compat with tests
-  | 'library'
-  | 'job-profiles'
-  | 'job-profile-detail';
+  | 'data';
 
 export const currentView = writable<View>('onboarding');
 export const activeProfileId = writable<string>('');
@@ -53,12 +49,9 @@ function viewToHash(view: View, profileId?: string, storyId?: string): string {
   switch (view) {
     case 'onboarding':        return '#/settings';
     case 'add-job':           return '#/job/new';
-    case 'job-hub':
-    case 'job-profile-detail':
-    case 'job-profiles':      return profileId ? `#/job/${profileId}` : '#/';
+    case 'job-hub':            return profileId ? `#/job/${profileId}` : '#/';
     case 'gap-fill':          return profileId ? `#/job/${profileId}/gaps` : '#/';
-    case 'story-bank':
-    case 'library':           return '#/stories';
+    case 'story-bank':        return '#/stories';
     case 'capture':           return '#/stories/capture';
     case 'review':            return '#/stories/review';
     case 'story-detail':      return storyId ? `#/stories/${storyId}` : '#/stories';

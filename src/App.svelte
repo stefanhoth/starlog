@@ -6,7 +6,6 @@
   import type { JobProfile } from './lib/types';
   import Onboarding from './views/Onboarding.svelte';
   import Brand from './lib/components/Brand.svelte';
-  import Library from './views/Library.svelte';
   import Capture from './views/Capture.svelte';
   import Review from './views/Review.svelte';
   import StoryDetail from './views/StoryDetail.svelte';
@@ -173,7 +172,7 @@
 
         <button
           class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors
-            {$currentView === 'story-bank' || $currentView === 'library'
+            {$currentView === 'story-bank'
               ? 'bg-base-200 text-base-content font-medium'
               : 'text-base-content/60 hover:bg-base-200 hover:text-base-content'}"
           onclick={() => navigate('story-bank')}
@@ -238,11 +237,11 @@
 
     <!-- ── Main ───────────────────────────────────────────────────── -->
     <main class="flex-1 overflow-y-auto bg-base-200 pb-16 md:pb-0" data-testid="main-content">
-      {#if $currentView === 'job-hub' || $currentView === 'job-profile-detail'}
+      {#if $currentView === 'job-hub'}
         <JobHub />
       {:else if $currentView === 'gap-fill'}
         <Capture />
-      {:else if $currentView === 'story-bank' || $currentView === 'library'}
+      {:else if $currentView === 'story-bank'}
         <StoryBank />
       {:else if $currentView === 'capture'}
         <Capture />
@@ -256,9 +255,6 @@
         <Onboarding />
       {:else if $currentView === 'add-job'}
         <Onboarding addJobMode />
-      {:else if $currentView === 'job-profiles'}
-        <!-- legacy: show job hub -->
-        <JobHub />
       {:else}
         {#if $jobProfilesStore.length > 0}
           <JobHub />
