@@ -116,6 +116,21 @@ function parseJson<T>(raw: string): T {
   }
 }
 
+function assertStoryDraft(parsed: unknown): asserts parsed is StoryDraft {
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    !('star' in parsed) ||
+    typeof (parsed as Record<string, unknown>).star !== 'object' ||
+    (parsed as Record<string, unknown>).star === null ||
+    !Array.isArray((parsed as { star: Record<string, unknown> }).star.action) ||
+    (parsed as { star: { action: unknown[] } }).star.action.length === 0 ||
+    !('quality' in parsed)
+  ) {
+    throw new GeminiError('Incomplete STAR response. Please try again.', true);
+  }
+}
+
 export async function extractSTAR(input: Blob | string): Promise<StoryDraft> {
   const model = getModel();
 
@@ -141,7 +156,9 @@ export async function extractSTAR(input: Blob | string): Promise<StoryDraft> {
     }
 
     const result = await model.generateContent(parts);
-    return parseJson<StoryDraft>(result.response.text());
+    const parsed = parseJson<unknown>(result.response.text());
+    assertStoryDraft(parsed);
+    return parsed;
   });
 }
 
@@ -172,7 +189,25 @@ export async function extractCompetencies(jobDescription: string): Promise<strin
     const result = await model.generateContent([
       { text: `${COMPETENCY_PROMPT}\n\nJob description:\n${trimmed}` },
     ]);
-    return parseJson<string[]>(result.response.text());
+    const parsed = parseJson<unknown>(result.response.text());
+
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((x) => typeof x === 'string')) {
+      return parsed as string[];
+    }
+
+    // Handle wrapped shape: { competencies: [...] }
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'competencies' in parsed &&
+      Array.isArray((parsed as { competencies: unknown }).competencies) &&
+      (parsed as { competencies: unknown[] }).competencies.length > 0 &&
+      (parsed as { competencies: unknown[] }).competencies.every((x) => typeof x === 'string')
+    ) {
+      return (parsed as { competencies: string[] }).competencies;
+    }
+
+    throw new GeminiError('Incomplete competencies response. Please try again.', true);
   });
 }
 
