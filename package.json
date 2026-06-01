@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "test:e2e": "docker run --rm --ipc=host -v \"$(pwd):/work\" -w /work mcr.microsoft.com/playwright:v1.60.0-noble sh -c 'npm ci && npx playwright test'"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
