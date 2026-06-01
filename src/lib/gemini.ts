@@ -4,13 +4,18 @@ import { settingsStore } from './stores/settings';
 import type { StoryDraft } from './types';
 
 export class GeminiError extends Error {
-  constructor(message: string, public readonly retryable: boolean = false) {
+  constructor(
+    message: string,
+    public readonly retryable: boolean = false,
+    public readonly isRateLimit: boolean = false
+  ) {
     super(message);
     this.name = 'GeminiError';
   }
 }
 
 const MAX_RETRIES = 4;
+const MAX_RATE_LIMIT_RETRIES = 2;
 const BASE_DELAY_MS = 1000;
 
 /** Convert any thrown value (including raw SDK errors) into a typed GeminiError. */
@@ -27,7 +32,7 @@ function toGeminiError(err: unknown): GeminiError {
     );
   }
   if (status === 429) {
-    return new GeminiError('Rate limit reached. Please wait a moment and try again.', true);
+    return new GeminiError('Rate limit reached. Please wait a moment and try again.', true, true);
   }
   if (status === 500 || status === 503) {
     return new GeminiError('Gemini is temporarily unavailable. Retrying…', true);
@@ -42,7 +47,16 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
       return await fn();
     } catch (err) {
       const wrapped = toGeminiError(err);
-      if (attempt === MAX_RETRIES || !wrapped.retryable) throw wrapped;
+      const maxForThisError = wrapped.isRateLimit ? MAX_RATE_LIMIT_RETRIES : MAX_RETRIES;
+      if (attempt === maxForThisError || !wrapped.retryable) {
+        if (wrapped.isRateLimit) {
+          throw new GeminiError(
+            "You've hit Gemini's rate limit. Wait a moment and try again.",
+            false
+          );
+        }
+        throw wrapped;
+      }
       const delay = BASE_DELAY_MS * 2 ** attempt + Math.random() * 500;
       await new Promise(r => setTimeout(r, delay));
     }
