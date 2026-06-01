@@ -36,9 +36,9 @@ function createSettingsStore() {
         return next;
       });
     },
-    set(value: Settings) {
-      persist(value);
+    set(value: Settings): Promise<void> {
       set(value);
+      return persist(value);
     },
     reset() {
       set({ ...defaults });

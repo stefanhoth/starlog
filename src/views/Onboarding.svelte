@@ -69,9 +69,9 @@
     return () => clearTimeout(timer);
   });
 
-  function submitKey() {
+  async function submitKey() {
     if (!canSave) return;
-    settingsStore.set({ apiKey: apiKey.trim(), consentGiven: true, geminiModel: selectedModel });
+    await settingsStore.set({ apiKey: apiKey.trim(), consentGiven: true, geminiModel: selectedModel });
     if ($jobProfilesStore.length === 0) {
       navigate('add-job');
     } else {
