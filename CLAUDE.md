@@ -10,3 +10,16 @@ Use the right script for your environment:
 | Claude Code cloud session | `npm run test:e2e:cloud` | Installs Chromium into `/opt/pw-browsers` and runs tests directly — no Docker needed |
 
 Cloud sessions are ephemeral so `test:e2e:cloud` self-installs the correct browser on every run.
+
+## Specialist Agents
+
+This repo defines specialist agents in `.claude/agents/`. Their full descriptions live in those files (the single source of truth — don't duplicate them here). Consult the relevant agent proactively when work touches its lane, and fan out across the relevant ones before merging a non-trivial change. All are read-only advisors **except** `test-engineer`, which writes and runs tests.
+
+| Agent | Consult when work touches… |
+|-------|----------------------------|
+| `product-manager` | product vision, scope/prioritisation, UX consistency, focus |
+| `product-designer` | UI and user flows, feedback states, accessibility, perceived performance |
+| `ai-engineer` | Gemini prompts, structured-output reliability, model choice, AI output quality |
+| `security-advisor` | API-key handling, user-data safety, the local-only privacy promise |
+| `senior-engineer` | architecture, Svelte 5 idioms, IndexedDB migrations, maintainability |
+| `test-engineer` | test coverage and strategy (writes & runs Playwright tests) |
