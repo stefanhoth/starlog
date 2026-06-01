@@ -12,8 +12,9 @@ async function openDataView(page: import('@playwright/test').Page) {
 }
 
 test.beforeEach(async ({ page }) => {
+  const { clearStorage } = await import('./helpers');
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
 });
 
 test('Data view shows Export and Import controls, not "Coming soon"', async ({ page }) => {

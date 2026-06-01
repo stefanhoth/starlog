@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { clearStorage, readDB } from './helpers';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const FIXTURE = JSON.parse(
@@ -10,7 +11,7 @@ const FIXTURE = JSON.parse(
 
 async function goToReview(page: import('@playwright/test').Page) {
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await clearStorage(page);
   // Seed consent + mock Gemini extraction before navigating
   await page.evaluate(() => {
     localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
@@ -55,8 +56,7 @@ test('editing situation persists on save', async ({ page }) => {
   await page.getByTestId('section-situation').click();
   await page.getByTestId('section-situation').fill('New situation text');
   await page.getByTestId('save-story').click();
-  // Verify saved to localStorage with our edited situation
-  const stories = await page.evaluate(() => JSON.parse(localStorage.getItem('starlog_stories') ?? '[]'));
+  const stories = await readDB(page, 'stories', []) as { star: { situation: string } }[];
   expect(stories[0].star.situation).toBe('New situation text');
 });
 
@@ -115,26 +115,17 @@ test('Esc shows confirm when field is dirty; dismissing keeps editor focused', a
 
 test('discard returns to capture without saving', async ({ page }) => {
   await goToReview(page);
-  const storiesBefore = await page.evaluate(() => {
-    const raw = localStorage.getItem('starlog_stories');
-    return raw ? JSON.parse(raw).length : 0;
-  });
+  const storiesBefore = await readDB(page, 'stories', []);
   await page.getByText('Discard').click();
   await expect(page.getByTestId('capture-view')).toBeVisible();
-  const storiesAfter = await page.evaluate(() => {
-    const raw = localStorage.getItem('starlog_stories');
-    return raw ? JSON.parse(raw).length : 0;
-  });
-  expect(storiesAfter).toBe(storiesBefore);
+  const storiesAfter = await readDB(page, 'stories', []);
+  expect((storiesAfter as unknown[]).length).toBe((storiesBefore as unknown[]).length);
 });
 
 test('save adds story to library', async ({ page }) => {
   await goToReview(page);
   await page.getByTestId('save-story').click();
-  const stories = await page.evaluate(() => {
-    const raw = localStorage.getItem('starlog_stories');
-    return raw ? JSON.parse(raw) : [];
-  });
+  const stories = await readDB(page, 'stories', []) as { title: string }[];
   expect(stories.length).toBeGreaterThan(0);
   expect(stories[0].title).toBeTruthy();
 });
