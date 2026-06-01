@@ -51,7 +51,7 @@ Open [http://localhost:5173](http://localhost:5173), enter your Gemini API key, 
 | Styling | Tailwind CSS v3 + DaisyUI v4 | Utility-first layout, component tokens for consistent UI |
 | Build | Vite 6 | Near-instant HMR in development; fast production builds |
 | AI | Gemini 2.5 Flash (`@google/generative-ai`) | Multimodal (audio + text in one call); generous free tier |
-| Storage | `localStorage` (stories, profiles, settings) + `sessionStorage` (transient UI state) | No backend needed; data never leaves the device |
+| Storage | IndexedDB (`idb`) for stories, profiles, and settings; one-time migration from `localStorage` on first access; `sessionStorage` for transient UI state | No backend needed; data never leaves the device |
 | Routing | Hash-based (`#/`) via History API | Deep links and back/forward work on GitHub Pages without server config |
 | Tests | Playwright (Chromium) | Real browser, real MediaRecorder, Gemini mocked via `page.route` |
 
@@ -91,8 +91,8 @@ Test fixtures live in `tests/fixtures/`. Gemini responses are mocked — no real
 ```
 src/
   lib/
-    components/     # StoryPicker (multi-select modal), StoryCard, JobProfileCard
-    stores/         # stories, jobProfiles, settings, view (localStorage-backed)
+    components/     # StoryMapModal (multi-select), StoryCard, JobProfileCard
+    stores/         # stories, jobProfiles, settings, view (IndexedDB-backed)
     gemini.ts       # extractSTAR, extractCompetencies, verifyApiKey
     audio.ts        # AudioRecorder (MediaRecorder wrapper)
     competencies.ts # preset competency tag list
@@ -101,9 +101,8 @@ src/
     App.svelte        # layout shell + view router (job-first sidebar)
     Onboarding.svelte # key setup → add-first-job → review competencies
     JobHub.svelte     # per-job competency coverage + map/draft actions
-    GapFill.svelte    # focused capture flow for a specific competency gap
     StoryBank.svelte  # full story table with text search
-    Capture.svelte    # record / upload / text → Gemini → Review
+    Capture.svelte    # record / upload / text → Gemini → Review (gap-fill is a mode of this view)
     Review.svelte     # edit & save extracted STAR draft
     StoryDetail.svelte # inline STAR editor, rank, tags, delete
     InterviewMode.svelte # full-screen prep: flash cards / mock / timer modes
