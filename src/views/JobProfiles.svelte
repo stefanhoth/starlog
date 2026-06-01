@@ -10,6 +10,10 @@
   let jobDescription = $state('');
   let loading = $state(false);
   let errorMsg = $state('');
+  let showArchived = $state(false);
+
+  const activeProfiles = $derived($jobProfilesStore.filter(p => !p.archivedAt));
+  const archivedProfiles = $derived($jobProfilesStore.filter(p => p.archivedAt != null));
 
   async function createProfile() {
     if (!company.trim() || !role.trim() || !jobDescription.trim()) {
@@ -82,16 +86,43 @@
     </div>
   {/if}
 
-  {#if $jobProfilesStore.length === 0 && !showForm}
+  {#if activeProfiles.length === 0 && !showForm}
     <div class="text-center py-16 text-base-content/40" data-testid="profiles-empty">
       <p class="text-lg font-medium">No job profiles yet</p>
       <p class="text-sm mt-1">Create one to track competency coverage for an application.</p>
     </div>
   {:else}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="profile-grid">
-      {#each $jobProfilesStore as profile (profile.id)}
+      {#each activeProfiles as profile (profile.id)}
         <JobProfileCard {profile} onclick={() => openProfile(profile.id)} />
       {/each}
+    </div>
+  {/if}
+
+  <!-- Archived section — only shown when there are archived jobs -->
+  {#if archivedProfiles.length > 0}
+    <div class="mt-8" data-testid="archived-section">
+      <button
+        class="flex items-center gap-2 text-sm text-base-content/40 hover:text-base-content/70 transition-colors mb-3"
+        onclick={() => showArchived = !showArchived}
+        aria-expanded={showArchived}
+        aria-controls="archived-grid"
+        data-testid="toggle-archived-btn"
+      >
+        <span class="transition-transform {showArchived ? 'rotate-90' : ''} inline-block">▶</span>
+        Archived ({archivedProfiles.length})
+      </button>
+      <div id="archived-grid" hidden={!showArchived}>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="archived-grid">
+          {#each archivedProfiles as profile (profile.id)}
+            <JobProfileCard
+              {profile}
+              onclick={() => openProfile(profile.id)}
+              onrevive={() => jobProfilesStore.reviveJobProfile(profile.id)}
+            />
+          {/each}
+        </div>
+      </div>
     </div>
   {/if}
 </div>

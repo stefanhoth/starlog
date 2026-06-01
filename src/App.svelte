@@ -27,9 +27,11 @@
     navigate('job-hub');
   }
 
-  // Auto-select first profile if none is active yet
+  const activeProfiles = $derived($jobProfilesStore.filter((p: JobProfile) => !p.archivedAt));
+
+  // Auto-select first active profile if none is active yet
   $effect(() => {
-    const profiles = $jobProfilesStore;
+    const profiles = activeProfiles;
     const current = $activeProfileId;
     if (!current && profiles.length > 0) {
       openJob(profiles[0].id);
@@ -56,6 +58,7 @@
   );
 
   let showWhatsNew = $state(false);
+  let sidebarArchivedOpen = $state(false);
   const hasUnseen = $derived($lastSeenDate !== CHANGELOG[0]?.date);
 
   onMount(() => {
@@ -96,7 +99,7 @@
           Jobs
         </div>
 
-        {#each $jobProfilesStore as profile (profile.id)}
+        {#each activeProfiles as profile (profile.id)}
           {@const pct = coveragePct(profile)}
           <button
             class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-sm transition-colors
@@ -117,7 +120,7 @@
           </button>
         {/each}
 
-        {#if $jobProfilesStore.length === 0}
+        {#if activeProfiles.length === 0}
           <p class="px-3 py-2 text-xs text-base-content/40 italic">No jobs yet</p>
         {/if}
 
@@ -128,6 +131,38 @@
         >
           + add job
         </button>
+
+        <!-- Archived jobs collapsible -->
+        {#if $jobProfilesStore.filter((p: JobProfile) => p.archivedAt).length > 0}
+          {@const archivedProfiles = $jobProfilesStore.filter((p: JobProfile) => p.archivedAt)}
+          <div class="mt-1" data-testid="sidebar-archived-section">
+            <button
+              class="w-full flex items-center gap-1 px-3 py-1 text-xs text-base-content/30 hover:text-base-content/50 transition-colors"
+              onclick={() => sidebarArchivedOpen = !sidebarArchivedOpen}
+              aria-expanded={sidebarArchivedOpen}
+              data-testid="sidebar-toggle-archived"
+            >
+              <span class="transition-transform {sidebarArchivedOpen ? 'rotate-90' : ''} inline-block text-[10px]">▶</span>
+              Archived ({archivedProfiles.length})
+            </button>
+            {#if sidebarArchivedOpen}
+              {#each archivedProfiles as profile (profile.id)}
+                <div class="flex items-center justify-between px-3 py-1.5 opacity-50 text-sm" data-testid="nav-archived-job-{profile.id}">
+                  <span class="truncate leading-tight min-w-0">
+                    <span class="block text-xs text-base-content/50 truncate">{profile.role}</span>
+                  </span>
+                  <button
+                    class="ml-1 text-xs text-primary/60 hover:text-primary shrink-0"
+                    onclick={() => jobProfilesStore.reviveJobProfile(profile.id)}
+                    data-testid="sidebar-revive-btn"
+                  >
+                    ↩
+                  </button>
+                </div>
+              {/each}
+            {/if}
+          </div>
+        {/if}
 
         <div class="my-2 border-t border-base-200"></div>
 

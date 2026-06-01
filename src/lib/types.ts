@@ -37,6 +37,7 @@ export interface JobProfile {
   competencyMap: Record<string, string[]>; // competency → [story_id, ...]
   createdAt: string;
   updatedAt: string;
+  archivedAt: string | null; // ISO timestamp or null = active
 }
 
 export type GeminiModel = 'gemini-3.5-flash' | 'gemini-2.5-flash' | 'gemini-3.5-flash-preview';

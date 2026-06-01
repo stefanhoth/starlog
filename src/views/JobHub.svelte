@@ -63,6 +63,29 @@
   // Expandable ranked list per competency
   let expandedComp = $state<string | null>(null);
 
+  const isArchived = $derived(profile?.archivedAt != null);
+
+  // Archive undo toast
+  let undoToast = $state<{ id: string; label: string } | null>(null);
+  let undoTimer = $state<ReturnType<typeof setTimeout> | null>(null);
+
+  function archiveJob() {
+    if (!profile) return;
+    const label = `${profile.role} at ${profile.company}`;
+    const id = profile.id;
+    jobProfilesStore.archiveJobProfile(id);
+    undoToast = { id, label };
+    if (undoTimer) clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => { undoToast = null; }, 5000);
+  }
+
+  function undoArchive() {
+    if (!undoToast) return;
+    jobProfilesStore.reviveJobProfile(undoToast.id);
+    if (undoTimer) clearTimeout(undoTimer);
+    undoToast = null;
+  }
+
   // Edit job profile modal
   type EditComp = { original: string; current: string };
 
@@ -124,13 +147,21 @@
       {/if}
     </div>
     <div class="flex items-start gap-2 shrink-0 ml-4">
-      {#if profile}
+      {#if profile && !isArchived}
         <button
           class="btn btn-ghost btn-sm"
           onclick={openEdit}
           data-testid="edit-job-btn"
         >
           ✎ Edit job
+        </button>
+        <button
+          class="btn btn-ghost btn-sm text-base-content/40 hover:text-base-content"
+          onclick={archiveJob}
+          aria-label="Archive {profile.role} at {profile.company}"
+          data-testid="archive-job-btn"
+        >
+          Archive
         </button>
       {/if}
       {#if profile && competencies.length > 0}
@@ -148,6 +179,17 @@
     <div class="flex flex-col items-center justify-center gap-4 py-24 text-base-content/40" data-testid="profiles-empty">
       <span class="text-5xl">💼</span>
       <button class="btn btn-primary" onclick={() => navigate('add-job')}>Add your first job</button>
+    </div>
+  {:else if isArchived}
+    <div class="rounded-xl border border-base-300 bg-base-200/60 px-5 py-6 flex flex-col gap-3" data-testid="archived-banner">
+      <p class="text-base-content/50 text-sm">This job profile is archived. The competency mappings are preserved.</p>
+      <button
+        class="btn btn-sm btn-outline w-fit"
+        onclick={() => jobProfilesStore.reviveJobProfile(profile!.id)}
+        data-testid="revive-job-btn"
+      >
+        ↩ Revive job
+      </button>
     </div>
   {:else if competencies.length === 0}
     <div class="alert alert-info text-sm">
@@ -278,6 +320,20 @@
 
   {/if}
 </div>
+
+<!-- Undo archive toast -->
+{#if undoToast}
+  <div
+    class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-base-content text-base-100 rounded-xl px-4 py-3 shadow-xl text-sm"
+    role="status"
+    data-testid="undo-toast"
+  >
+    <span>"{undoToast.label}" archived</span>
+    <button class="btn btn-xs btn-ghost text-base-100 hover:bg-base-100/20" onclick={undoArchive} data-testid="undo-btn">
+      Undo
+    </button>
+  </div>
+{/if}
 
 <!-- Edit job profile modal -->
 {#if editOpen}
