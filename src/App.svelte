@@ -2,6 +2,7 @@
   import { currentView, navigate, openJob, activeProfileId } from './lib/stores/view';
   import { settingsStore } from './lib/stores/settings';
   import { jobProfilesStore } from './lib/stores/jobProfiles';
+  import { storageError } from './lib/stores/storageError';
   import type { JobProfile } from './lib/types';
   import Onboarding from './views/Onboarding.svelte';
   import Brand from './lib/components/Brand.svelte';
@@ -50,6 +51,13 @@
     ($currentView === 'onboarding' && !$settingsStore.consentGiven)
   );
 </script>
+
+{#if $storageError}
+  <div role="alert" class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 bg-error text-error-content px-4 py-3 text-sm shadow-lg">
+    <span>⚠️ {$storageError}</span>
+    <button class="btn btn-xs btn-ghost text-error-content" onclick={() => storageError.set(null)}>Dismiss</button>
+  </div>
+{/if}
 
 {#if isFullScreen}
   {#if $currentView === 'interview'}
