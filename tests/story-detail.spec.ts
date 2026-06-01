@@ -52,6 +52,12 @@ test('editing result and saving persists on reload', async ({ page }) => {
   await page.getByTestId('detail-result').click();
   await page.getByTestId('detail-result').fill('New result text');
   await page.getByTestId('save-btn').click();
+  // persist() is fire-and-forget inside updateStory — wait for the IndexedDB
+  // write to commit before reloading, otherwise the reload races the write.
+  await expect.poll(async () => {
+    const stories = await readDB(page, 'stories', []) as Story[];
+    return stories.find((s: Story) => s.id === 'story-detail-test')?.star.result;
+  }).toBe('New result text');
   await page.reload();
   await page.getByTestId('nav-story-bank').click();
   await page.getByTestId('story-row').first().click();
