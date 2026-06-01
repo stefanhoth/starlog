@@ -92,6 +92,8 @@
 
   // Text tab
   let textInput = $state('');
+  const MIN_TEXT_LENGTH = 50;
+  const isTooShort = $derived(textInput.trim().length > 0 && textInput.trim().length < MIN_TEXT_LENGTH);
 
   function formatTime(s: number) {
     const m = Math.floor(s / 60).toString().padStart(2, '0');
@@ -266,8 +268,14 @@
         class="textarea textarea-bordered w-full h-48 resize-y"
         placeholder="I was working at Acme when we had a major outage..."
         bind:value={textInput}
+        aria-describedby={isTooShort ? 'text-length-hint' : undefined}
         data-testid="text-input"
       ></textarea>
+      {#if isTooShort}
+        <p id="text-length-hint" class="text-warning text-sm" role="status" data-testid="text-length-hint">
+          Tell us a bit more — 2–3 sentences gives Gemini enough to work with.
+        </p>
+      {/if}
       <AiWorking active={loading}>
         <button
           class="btn btn-primary w-full"
