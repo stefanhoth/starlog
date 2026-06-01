@@ -7,6 +7,8 @@
   import { GEMINI_MODELS, type GeminiModel } from '../lib/types';
   import AiWorking from '../lib/components/AiWorking.svelte';
   import Brand from '../lib/components/Brand.svelte';
+  import ChangelogList from '../lib/components/ChangelogList.svelte';
+  import { CHANGELOG } from '../lib/changelog';
 
   // addJobMode: skip key step and go straight to job entry (for sidebar "+ add job")
   let { addJobMode = false }: { addJobMode?: boolean } = $props();
@@ -23,6 +25,7 @@
   let showSecurityPopover = $state(false);
   let showPrivacyPopover = $state(false);
   let showHowItWorks = $state(false);
+  let showChangelog = $state(false);
 
   // ── Step 1: API key & model selection ─────────────────────────────
   let apiKey = $state($settingsStore.apiKey ?? '');
@@ -66,9 +69,9 @@
     return () => clearTimeout(timer);
   });
 
-  function submitKey() {
+  async function submitKey() {
     if (!canSave) return;
-    settingsStore.set({ apiKey: apiKey.trim(), consentGiven: true, geminiModel: selectedModel });
+    await settingsStore.set({ apiKey: apiKey.trim(), consentGiven: true, geminiModel: selectedModel });
     if ($jobProfilesStore.length === 0) {
       navigate('add-job');
     } else {
@@ -284,10 +287,26 @@
             How it works →
           </button>
         </div>
+
+        <!-- What's New disclosure -->
+        <div class="mt-6 max-w-md">
+          <button
+            class="text-xs text-primary/70 hover:text-primary transition-colors"
+            aria-expanded={showChangelog}
+            aria-controls="onboarding-changelog"
+            onclick={() => showChangelog = !showChangelog}
+          >
+            {showChangelog ? 'Hide what\'s new ↑' : 'See what\'s new ↓'}
+          </button>
+          <div id="onboarding-changelog" class="mt-4" hidden={!showChangelog}>
+            <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 mb-4">Actively developed — here's what just shipped</p>
+            <ChangelogList entries={CHANGELOG} initialVisible={1} />
+          </div>
+        </div>
       </div>
 
       <!-- Right: key form -->
-      <div class="bg-base-200 border-l border-base-300 flex items-center justify-center p-8 lg:p-10">
+      <div class="bg-base-200 border-l border-base-300 flex items-center justify-center p-8 lg:p-10 lg:sticky lg:top-0 lg:h-screen">
         <div class="w-full max-w-sm flex flex-col gap-5">
           <div>
             <div class="flex items-center gap-2">
