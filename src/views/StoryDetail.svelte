@@ -206,6 +206,33 @@
     </div>
   {/if}
 
+  <!-- AI Verdict + Your Readiness — shown before STAR so they're visible without scrolling -->
+  {#if quality.notes}
+    <div class="alert alert-info text-sm mb-3"><span>💡 {quality.notes}</span></div>
+  {/if}
+
+  <div class="mb-5 pb-4 border-b border-base-300" data-testid="readiness-section">
+    <div class="flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50 shrink-0">Your readiness</span>
+      <div class="flex gap-1">
+        {#each READINESS_STATES as s}
+          <button
+            class="text-xl transition-colors {rank !== null && rank >= s.rank ? 'text-indigo-500' : 'text-base-content/20'} hover:text-indigo-400"
+            onclick={() => { rank = s.rank; save(); }}
+            aria-label="Readiness: {s.label}"
+            data-testid="readiness-star"
+          >★</button>
+        {/each}
+      </div>
+      {#if rank !== null}
+        <span class="text-sm font-medium text-indigo-600">{READINESS_STATES[rank - 1].label}</span>
+        <button class="text-xs text-base-content/30 hover:text-base-content/60 transition-colors" onclick={() => { rank = null; save(); }}>clear</button>
+      {:else}
+        <span class="text-sm text-base-content/30 italic">not yet rated</span>
+      {/if}
+    </div>
+  </div>
+
   <!-- STAR Timeline -->
   <div class="mb-4">
 
@@ -389,33 +416,6 @@
     ></textarea>
   </div>
 
-  {#if quality.notes}
-    <div class="alert alert-info text-sm mb-4"><span>💡 {quality.notes}</span></div>
-  {/if}
-
-  <!-- Your Readiness — user-owned rating, visually separated from AI quality above -->
-  <div class="pt-4 border-t border-base-300 mb-4" data-testid="readiness-section">
-    <p class="text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-2">Your readiness</p>
-    <p class="text-xs text-base-content/40 mb-3">How confident are you telling this story out loud?</p>
-    <div class="flex items-center gap-3 flex-wrap">
-      <div class="flex gap-1">
-        {#each READINESS_STATES as s}
-          <button
-            class="text-xl transition-colors {rank !== null && rank >= s.rank ? 'text-indigo-500' : 'text-base-content/20'} hover:text-indigo-400"
-            onclick={() => { rank = s.rank; save(); }}
-            aria-label="Readiness: {s.label}"
-            data-testid="readiness-star"
-          >★</button>
-        {/each}
-      </div>
-      {#if rank !== null}
-        <span class="text-sm font-medium text-indigo-600">{READINESS_STATES[rank - 1].label}</span>
-        <button class="text-xs text-base-content/30 hover:text-base-content/60 transition-colors" onclick={() => { rank = null; save(); }}>clear</button>
-      {:else}
-        <span class="text-sm text-base-content/30 italic">not yet rated</span>
-      {/if}
-    </div>
-  </div>
 
   <!-- Delete confirmation modal -->
   {#if showDeleteConfirm}
