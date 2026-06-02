@@ -7,7 +7,6 @@
   import { GEMINI_MODELS, type GeminiModel } from '../lib/types';
   import AiWorking from '../lib/components/AiWorking.svelte';
   import Brand from '../lib/components/Brand.svelte';
-  import ChangelogList from '../lib/components/ChangelogList.svelte';
   import WhatsNewPanel from '../lib/components/WhatsNewPanel.svelte';
   import { CHANGELOG } from '../lib/changelog';
 
@@ -291,21 +290,6 @@
           </button>
         </div>
 
-        <!-- What's New disclosure -->
-        <div class="mt-6 max-w-md">
-          <button
-            class="text-xs text-primary/70 hover:text-primary transition-colors"
-            aria-expanded={showChangelog}
-            aria-controls="onboarding-changelog"
-            onclick={() => showChangelog = !showChangelog}
-          >
-            {showChangelog ? 'Hide what\'s new ↑' : 'See what\'s new ↓'}
-          </button>
-          <div id="onboarding-changelog" class="mt-4" hidden={!showChangelog}>
-            <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 mb-4">Actively developed — here's what just shipped</p>
-            <ChangelogList entries={CHANGELOG} initialVisible={1} />
-          </div>
-        </div>
       </div>
 
       <!-- Right: key form + changelog teaser -->
