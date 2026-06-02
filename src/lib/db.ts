@@ -20,9 +20,10 @@ export function getDB(): Promise<StarlogDB> {
           db.createObjectStore('snapshots');
         }
 
-        // v1 → v2: reset rank === 3 (the pre-#103 auto-default) to null (unrated)
-        // in both the primary data store and the rolling snapshot store.
+        // v1 → v2: reset rank === 3 (the pre-#103 auto-default) to null (unrated).
+        // Runs exactly once per browser thanks to the version gate.
         if (oldVersion < 2) {
+          // Migrate stories already in the IDB data and snapshots stores.
           for (const storeName of ['data', 'snapshots'] as const) {
             const raw = await tx.objectStore(storeName).get('stories');
             if (!raw) continue;
@@ -38,6 +39,7 @@ export function getDB(): Promise<StarlogDB> {
               // corrupted blob — leave as-is rather than destroying data
             }
           }
+
         }
       },
     });

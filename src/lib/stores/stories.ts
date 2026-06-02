@@ -6,18 +6,6 @@ import { getDB, loadWithFallback, persistToDB } from '../db';
 const DB_KEY = 'stories';
 const LS_KEY = 'starlog_stories';
 
-/**
- * Resets rank === 3 (the pre-#103 auto-default) to null (unrated).
- *
- * The IDB upgrade in db.ts handles this for stories already in IndexedDB.
- * This function covers the edge case where data arrives via localStorage
- * (the one-time migration path in loadWithFallback) and never passed through
- * the IDB versionchange transaction.
- */
-export function normalizeRanks(stories: Story[]): Story[] {
-  return stories.map(s => (s.rank === 3 ? { ...s, rank: null } : s));
-}
-
 async function persist(stories: Story[]): Promise<void> {
   try {
     const db = await getDB();
@@ -32,16 +20,8 @@ function createStoriesStore() {
   const { subscribe, set, update } = writable<Story[]>([]);
 
   async function init(): Promise<void> {
-    const raw = await loadWithFallback<Story[]>(DB_KEY, LS_KEY, []);
-    // Belt-and-suspenders normalisation: catches any rank:3 values that arrived
-    // via the localStorage fallback path and therefore bypassed the IDB upgrade.
-    const hasLegacyRank = raw.some(s => s.rank === 3);
-    const stories = hasLegacyRank ? normalizeRanks(raw) : raw;
+    const stories = await loadWithFallback<Story[]>(DB_KEY, LS_KEY, []);
     set(stories);
-    if (hasLegacyRank) {
-      // Persist the normalised data so subsequent loads don't need to re-normalise.
-      await persist(stories);
-    }
   }
 
   return {
