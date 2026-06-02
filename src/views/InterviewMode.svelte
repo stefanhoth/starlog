@@ -179,6 +179,8 @@
       if (e.key === 'ArrowRight') nextTimerStory();
       if (e.key === ' ') { e.preventDefault(); toggleTimer(); }
       if (e.key === 'Escape') exit();
+    } else if (submode === 'launch') {
+      if (e.key === 'Escape') exit();
     }
   }
 
