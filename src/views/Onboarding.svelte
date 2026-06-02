@@ -8,7 +8,10 @@
   import AiWorking from '../lib/components/AiWorking.svelte';
   import Brand from '../lib/components/Brand.svelte';
   import ChangelogList from '../lib/components/ChangelogList.svelte';
+  import WhatsNewPanel from '../lib/components/WhatsNewPanel.svelte';
   import { CHANGELOG } from '../lib/changelog';
+
+  const recentChanges = CHANGELOG.flatMap(e => e.changes).slice(0, 3);
 
   // addJobMode: skip key step and go straight to job entry (for sidebar "+ add job")
   let { addJobMode = false }: { addJobMode?: boolean } = $props();
@@ -305,8 +308,8 @@
         </div>
       </div>
 
-      <!-- Right: key form -->
-      <div class="bg-base-200 border-l border-base-300 flex items-center justify-center p-8 lg:p-10 lg:sticky lg:top-0 lg:h-screen">
+      <!-- Right: key form + changelog teaser -->
+      <div class="bg-base-200 border-l border-base-300 flex flex-col items-center justify-center gap-8 p-8 lg:p-10 lg:sticky lg:top-0 lg:h-screen">
         <div class="w-full max-w-sm flex flex-col gap-5">
           <div>
             <div class="flex items-center gap-2">
@@ -371,10 +374,33 @@
             Get Started →
           </button>
         </div>
+
+        <!-- Changelog teaser — desktop only, new-user landing only -->
+        {#if recentChanges.length > 0}
+          <div class="hidden lg:block w-full max-w-sm border-t border-base-300 pt-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-base-content/40">What's new</span>
+              <button class="text-xs text-primary/70 hover:text-primary transition-colors" onclick={() => showChangelog = true}>See all →</button>
+            </div>
+            <ul class="flex flex-col gap-3">
+              {#each recentChanges as item}
+                <li>
+                  <p class="text-xs font-medium text-base-content leading-snug">{item.title}</p>
+                  <p class="text-xs text-base-content/50 leading-relaxed line-clamp-1 mt-0.5">{item.detail}</p>
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
       </div>
     </div>
 
   </div>
+
+  <!-- What's New slide-over (suppressMarkSeen so the in-app badge stays unread) -->
+  {#if showChangelog}
+    <WhatsNewPanel onClose={() => showChangelog = false} suppressMarkSeen />
+  {/if}
 
   <!-- Security popover -->
   {#if showSecurityPopover}
