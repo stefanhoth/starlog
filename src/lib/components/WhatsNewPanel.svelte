@@ -4,10 +4,10 @@
   import { onMount } from 'svelte';
   import ChangelogList from './ChangelogList.svelte';
 
-  let { onClose }: { onClose: () => void } = $props();
+  let { onClose, suppressMarkSeen = false }: { onClose: () => void; suppressMarkSeen?: boolean } = $props();
 
   onMount(async () => {
-    if (CHANGELOG.length > 0) {
+    if (!suppressMarkSeen && CHANGELOG.length > 0) {
       await markSeen(CHANGELOG[0].date);
     }
   });
