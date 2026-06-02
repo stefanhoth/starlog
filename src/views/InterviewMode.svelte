@@ -3,6 +3,7 @@
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { navigate, activeProfileId } from '../lib/stores/view';
   import type { Story } from '../lib/types';
+  import { READINESS_STATES } from '../lib/readiness';
 
   type Submode = 'launch' | 'read' | 'train-question' | 'train-timer';
   type InterviewMode = 'library' | 'profile';
@@ -122,12 +123,15 @@
   let timerElapsed = $state(0);
   let timerRunning = $state(false);
   let selectedRating = $state<number | null>(null);
+  let savedFlash = $state(false);
+  let savedFlashTimeout: ReturnType<typeof setTimeout> | null = null;
   const TARGET_SECONDS = 90;
 
   let timerInterval: ReturnType<typeof setInterval> | null = null;
   $effect(() => {
     if (submode === 'train-timer') {
-      timerElapsed = 0; timerRunning = true; selectedRating = null;
+      timerElapsed = 0; timerRunning = true;
+      selectedRating = currentStory?.rank ?? null;
       timerInterval = setInterval(() => { if (timerRunning) timerElapsed++; }, 1000);
     } else {
       if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
@@ -140,9 +144,19 @@
 
   function toggleTimer() { timerRunning = !timerRunning; }
 
+  function rate(n: number) {
+    selectedRating = n;
+    if (currentStory) storiesStore.updateStory(currentStory.id, { rank: n });
+    if (savedFlashTimeout) clearTimeout(savedFlashTimeout);
+    savedFlash = true;
+    savedFlashTimeout = setTimeout(() => { savedFlash = false; }, 1500);
+  }
+
   function nextTimerStory() {
     nextStory();
-    timerElapsed = 0; timerRunning = true; selectedRating = null;
+    timerElapsed = 0; timerRunning = true;
+    selectedRating = currentStory?.rank ?? null;
+    savedFlash = false;
   }
 
   // ── Keyboard handler ──────────────────────────────────────────────
@@ -161,14 +175,14 @@
       if (e.key === 'ArrowRight' && questionRevealed) nextQuestion();
       if (e.key === 'Escape') exit();
     } else if (submode === 'train-timer') {
-      if (e.key >= '1' && e.key <= '5') selectedRating = parseInt(e.key);
+      if (e.key >= '1' && e.key <= '5') rate(parseInt(e.key));
       if (e.key === 'ArrowRight') nextTimerStory();
       if (e.key === ' ') { e.preventDefault(); toggleTimer(); }
       if (e.key === 'Escape') exit();
     }
   }
 
-  const RATINGS = ['🤯 lost it', '😬 rough', '🙂 ok', '💪 strong', '🎯 nailed'];
+
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -181,7 +195,7 @@
     <div class="flex items-center justify-between px-8 py-4 border-b border-base-300">
       <div class="flex items-center gap-2">
         <span class="text-primary font-bold text-lg">★</span>
-        <span class="font-bold text-sm">StarLog · Interview Prep</span>
+        <span class="font-bold text-sm">StarLog · Rehearse</span>
       </div>
       <button class="btn btn-ghost btn-sm" onclick={exit} data-testid="exit-btn">✕ Exit</button>
     </div>
@@ -212,7 +226,7 @@
               onclick={() => submode = m.sub}
               data-testid="mode-{m.sub}"
             >
-              <div class="text-3xl mb-3">{m.icon}</div>
+              <div class="text-3xl mb-3" aria-hidden="true">{m.icon}</div>
               <div class="font-semibold text-sm group-hover:text-primary transition-colors">{m.label}</div>
               <div class="text-xs text-base-content/50 mt-0.5">{m.desc}</div>
             </button>
@@ -247,7 +261,7 @@
     <div class="flex items-center justify-between mb-6 text-sm text-neutral-content/60">
       <div class="flex items-center gap-2">
         <span class="text-primary text-xs">★</span>
-        <span>StarLog · Review mode</span>
+        <span>StarLog · Flash cards</span>
       </div>
       <div class="flex items-center gap-4">
         {#if currentGroup?.competency}
@@ -471,18 +485,29 @@
 
         <!-- Self-rating -->
         <div>
-          <p class="text-xs text-neutral-content/40 uppercase tracking-widest mb-2">How did that feel?</p>
+          <p class="text-xs text-neutral-content/40 uppercase tracking-widest mb-2">
+            {#if savedFlash}
+              saved to readiness ✓
+            {:else if currentStory?.rank !== null && currentStory?.rank !== undefined}
+              Update readiness?
+            {:else}
+              How did that feel?
+            {/if}
+          </p>
           <div class="grid grid-cols-5 gap-2">
-            {#each RATINGS as label, i}
+            {#each READINESS_STATES as s}
               <button
                 class="border rounded-xl py-2 px-1 text-center text-xs transition-all
-                  {selectedRating === i + 1
+                  {selectedRating === s.rank
                     ? 'border-primary bg-primary/20 text-primary'
                     : 'border-neutral-700 text-neutral-content/60 hover:border-primary/50'}"
-                onclick={() => selectedRating = i + 1}
+                onclick={() => rate(s.rank)}
+                aria-label="Readiness: {s.label}"
+                aria-pressed={selectedRating === s.rank}
+                data-testid="rating-{s.rank}"
               >
-                <div class="text-lg mb-1">{label.split(' ')[0]}</div>
-                <div class="text-xs text-neutral-content/40">{i + 1} · {label.split(' ').slice(1).join(' ')}</div>
+                <div class="text-lg mb-1">{s.emoji}</div>
+                <div class="text-xs text-neutral-content/40">{s.rank} · {s.label}</div>
               </button>
             {/each}
           </div>
@@ -492,7 +517,7 @@
       <!-- Nav -->
       <div class="flex items-center justify-between mt-4 text-sm text-neutral-content/40">
         <button onclick={prevStory} data-testid="prev-story-btn">← prev</button>
-        <span class="text-xs">rate 1–5 · → next</span>
+        <span class="text-xs">rate 1–5 · space pause · → next</span>
         <button onclick={nextTimerStory} data-testid="next-story-btn">next →</button>
       </div>
     {/if}
