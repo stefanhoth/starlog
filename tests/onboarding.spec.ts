@@ -67,6 +67,9 @@ test('reload after setup skips onboarding', async ({ page }) => {
   await page.getByTestId('api-key-input').fill('AIzaTestKey123');
   await expect(page.getByTestId('verify-success')).toBeVisible({ timeout: 10000 });
   await page.getByTestId('onboarding-submit').click();
+  // submitKey() is async — wait for it to write to IndexedDB and navigate away before
+  // reloading, otherwise the reload races the write and settings may not be persisted yet.
+  await expect(page.getByTestId('api-key-input')).not.toBeVisible({ timeout: 5000 });
   await page.reload();
   await expect(page.getByTestId('api-key-input')).not.toBeVisible();
   await expect(page.getByTestId('settings-cog')).toBeVisible();
