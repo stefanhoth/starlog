@@ -217,7 +217,7 @@
           class="btn btn-ghost btn-sm justify-start gap-2 relative w-full"
           onclick={() => showWhatsNew = true}
         >
-          What's New
+          ✨ What's New
           {#if hasUnseen}
             <span data-testid="whats-new-badge" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary"></span>
           {/if}
