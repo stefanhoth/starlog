@@ -120,7 +120,7 @@ jobs:
         with:
           path: dist/
 
-      - uses: actions/deploy-pages@v4
+      - uses: actions/deploy-pages@v5
         id: deploy
 
       - name: Tag release (CalVer YYYY.MM.DD)
