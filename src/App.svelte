@@ -20,6 +20,8 @@
 
   // Redirect to onboarding if not yet configured; existing users go to job hub.
   // Guard against pushing a redundant history entry when URL already resolved correctly.
+  // Safe to run once: initStores() completes before App mounts (see main.ts), so
+  // $settingsStore.consentGiven already reflects the persisted value here.
   if (!$settingsStore.consentGiven) {
     if ($currentView !== 'onboarding') navigate('onboarding');
   } else if ($currentView === 'onboarding') {
