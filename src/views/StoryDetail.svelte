@@ -64,7 +64,7 @@
     </div>
     <div class="flex gap-2 shrink-0">
       <button class="btn btn-error btn-sm btn-outline" onclick={() => showDeleteConfirm = true} data-testid="delete-btn">Delete</button>
-      <button class="btn btn-primary btn-sm" onclick={() => { if (editingTitle) commitTitle(); else { starEditor?.commitPending(); save(); } }} data-testid="save-btn">Save</button>
+      <button class="btn btn-primary btn-sm" onclick={() => { if (editingTitle) commitTitle(); else { starEditor?.commitPending(); save(); navigate('story-bank'); } }} data-testid="save-btn">Save</button>
     </div>
   </div>
 

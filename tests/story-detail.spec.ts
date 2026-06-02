@@ -90,3 +90,34 @@ test('delete confirm removes story and returns to story bank', async ({ page }) 
   const stories = await readDB(page, 'stories', []);
   expect(stories).toHaveLength(0);
 });
+
+test('Save button persists changes and navigates to story-bank-view', async ({ page }) => {
+  await openDetail(page, makeStory());
+  await page.getByTestId('detail-situation').click();
+  await page.getByTestId('detail-situation').fill('Updated situation');
+  await page.getByTestId('save-btn').click();
+  // Should land on story-bank-view
+  await expect(page.getByTestId('story-bank-view')).toBeVisible();
+  // And the change should be persisted
+  await expect.poll(async () => {
+    const stories = await readDB(page, 'stories', []) as Story[];
+    return stories.find((s: Story) => s.id === 'story-detail-test')?.star.situation;
+  }).toBe('Updated situation');
+});
+
+test('committing a STAR field autosaves but stays on story-detail-view', async ({ page }) => {
+  await openDetail(page, makeStory());
+  // Click the situation field to enter edit mode
+  await page.getByTestId('detail-situation').click();
+  // The field is now a textarea; fill it
+  await page.getByTestId('detail-situation').fill('Autosaved situation');
+  // Commit via Enter key (triggers oncommit → save(), but should NOT navigate)
+  await page.getByTestId('detail-situation').press('Enter');
+  // Should stay on story-detail-view, not navigate away
+  await expect(page.getByTestId('story-detail-view')).toBeVisible();
+  // The change should be persisted
+  await expect.poll(async () => {
+    const stories = await readDB(page, 'stories', []) as Story[];
+    return stories.find((s: Story) => s.id === 'story-detail-test')?.star.situation;
+  }).toBe('Autosaved situation');
+});
