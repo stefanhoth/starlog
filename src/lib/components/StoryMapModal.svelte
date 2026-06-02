@@ -1,21 +1,31 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { storiesStore } from '../stores/stories';
   import type { Story } from '../types';
+  import StarReadView from './StarReadView.svelte';
 
   let {
     comp,
     initialIds,
     onSave,
     onCancel,
+    triggerEl = null,
   }: {
     comp: string;
     initialIds: string[];
     onSave: (ids: string[]) => void;
     onCancel: () => void;
+    triggerEl?: HTMLElement | null;
   } = $props();
 
   let search = $state('');
   let selected = $state<string[]>([...initialIds]);
+  let expandedStoryId = $state<string | null>(null);
+  let searchInputEl = $state<HTMLInputElement | null>(null);
+
+  onMount(() => {
+    searchInputEl?.focus();
+  });
 
   const filtered = $derived(
     $storiesStore.filter(s => {
@@ -56,9 +66,19 @@
     return '●'.repeat(rank) + '○'.repeat(5 - rank);
   }
 
+  function handleCancel() {
+    triggerEl?.focus();
+    onCancel();
+  }
+
+  function handleSave(ids: string[]) {
+    triggerEl?.focus();
+    onSave(ids);
+  }
+
   $effect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Escape') handleCancel();
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -72,7 +92,7 @@
   aria-label="Map stories to competency"
   tabindex="-1"
   data-testid="story-map-modal"
-  onclick={(e) => e.target === e.currentTarget && onCancel()}
+  onclick={(e) => e.target === e.currentTarget && handleCancel()}
 >
   <div class="bg-base-100 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh]">
 
@@ -100,6 +120,7 @@
             class="input input-sm input-bordered w-full"
             placeholder="Search by title or tag…"
             bind:value={search}
+            bind:this={searchInputEl}
             data-testid="story-search"
           />
         </div>
@@ -112,6 +133,7 @@
           {:else}
             {#each filtered as story (story.id)}
               {@const isAdded = selected.includes(story.id)}
+              {@const isExpanded = expandedStoryId === story.id}
               <div
                 class="rounded-xl border p-3 transition-colors
                   {isAdded
@@ -121,14 +143,24 @@
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium leading-snug">{story.title}</p>
-                    {#if story.star.situation}
+                    <div class="flex items-center gap-1.5">
+                      <button
+                        class="text-base-content/40 hover:text-base-content/70 transition-colors text-xs shrink-0"
+                        aria-expanded={isExpanded}
+                        aria-controls="star-expand-{story.id}"
+                        data-testid="expand-story-{story.id}"
+                        onclick={() => expandedStoryId = isExpanded ? null : story.id}
+                        title={isExpanded ? 'Collapse' : 'Expand STAR'}
+                      >{isExpanded ? '▾' : '▸'}</button>
+                      <p class="text-sm font-medium leading-snug">{story.title}</p>
+                    </div>
+                    {#if story.star.situation && !isExpanded}
                       <p class="text-xs text-base-content/50 mt-1 leading-relaxed">
                         {excerpt(story.star.situation)}
                       </p>
                     {/if}
                     <div class="flex items-center gap-2 mt-2 flex-wrap">
-                      <span class="text-xs text-warning/70 tracking-tight font-mono" title="Story quality rank">
+                      <span class="text-xs text-warning/70 tracking-tight font-mono" title="Readiness {story.rank ?? '–'}/5">
                         {rankDots(story.rank)}
                       </span>
                       {#each story.competency_tags as tag}
@@ -150,6 +182,11 @@
                     </button>
                   {/if}
                 </div>
+                {#if isExpanded}
+                  <div id="star-expand-{story.id}" class="mt-3 pt-3 border-t border-base-300">
+                    <StarReadView star={story.star} />
+                  </div>
+                {/if}
               </div>
             {/each}
           {/if}
@@ -229,10 +266,10 @@
 
     <!-- Footer -->
     <div class="px-6 py-4 border-t border-base-200 shrink-0 flex justify-end gap-2">
-      <button class="btn btn-ghost btn-sm" onclick={onCancel}>Cancel</button>
+      <button class="btn btn-ghost btn-sm" onclick={handleCancel}>Cancel</button>
       <button
         class="btn btn-primary btn-sm"
-        onclick={() => onSave(selected)}
+        onclick={() => handleSave(selected)}
         data-testid="story-map-save-btn"
       >
         Save →

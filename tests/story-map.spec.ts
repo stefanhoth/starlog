@@ -155,3 +155,49 @@ test('save button persists mapping and closes modal', async ({ page }) => {
   // Competency row should now show edit-mapping-btn (covered state)
   await expect(page.getByTestId('competency-row').first().getByTestId('edit-mapping-btn')).toBeVisible();
 });
+
+test('expand reveals full STAR situation text', async ({ page }) => {
+  const story = makeStory({ id: 'story-1', star: { situation: 'We faced a critical infrastructure failure at 2am.', task: 'T', action: ['A'], result: 'R' } });
+  await openJobHub(page, makeProfile(), [story]);
+  await page.getByTestId('map-existing-btn').first().click();
+  const expandBtn = page.getByTestId(`expand-story-${story.id}`);
+  await expandBtn.click();
+  await expect(page.getByTestId('story-library-panel')).toContainText('We faced a critical infrastructure failure at 2am.');
+});
+
+test('expand does NOT toggle selection', async ({ page }) => {
+  const story = makeStory({ id: 'story-1' });
+  await openJobHub(page, makeProfile(), [story]);
+  await page.getByTestId('map-existing-btn').first().click();
+  // Confirm no stories selected initially
+  await expect(page.getByTestId('story-selection-panel')).toContainText('Selected · 0');
+  // Expand the card
+  await page.getByTestId(`expand-story-${story.id}`).click();
+  // Selection count should remain at 0
+  await expect(page.getByTestId('story-selection-panel')).toContainText('Selected · 0');
+});
+
+test('pending selection survives expand of another story', async ({ page }) => {
+  const storyA = makeStory({ id: 'a', title: 'Alpha' });
+  const storyB = makeStory({ id: 'b', title: 'Beta' });
+  await openJobHub(page, makeProfile(), [storyA, storyB]);
+  await page.getByTestId('map-existing-btn').first().click();
+  // Add story A to mapping
+  await page.getByTestId('story-add-btn').first().click();
+  await expect(page.getByTestId('story-selection-panel')).toContainText('Selected · 1');
+  // Expand story B
+  await page.getByTestId(`expand-story-${storyB.id}`).click();
+  // Story A should still be in the selected list
+  await expect(page.getByTestId('story-selection-panel')).toContainText('Selected · 1');
+  await expect(page.getByTestId('story-selection-panel')).toContainText('Alpha');
+});
+
+test('aria-expanded flips on expand button click', async ({ page }) => {
+  const story = makeStory({ id: 'story-1' });
+  await openJobHub(page, makeProfile(), [story]);
+  await page.getByTestId('map-existing-btn').first().click();
+  const expandBtn = page.getByTestId(`expand-story-${story.id}`);
+  await expect(expandBtn).toHaveAttribute('aria-expanded', 'false');
+  await expandBtn.click();
+  await expect(expandBtn).toHaveAttribute('aria-expanded', 'true');
+});
