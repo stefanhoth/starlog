@@ -9,7 +9,7 @@ const LS_KEY = 'starlog_job_profiles';
 async function persist(profiles: JobProfile[]): Promise<void> {
   try {
     const db = await getDB();
-    await persistToDB(db, DB_KEY, profiles);
+    await persistToDB(db, DB_KEY, profiles, LS_KEY);
   } catch (err) {
     storageError.set('Could not save data. Your changes may be lost after reload.');
     console.error('[starlog] jobProfiles persist failed:', err);

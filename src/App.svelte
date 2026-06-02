@@ -3,6 +3,7 @@
   import { settingsStore } from './lib/stores/settings';
   import { jobProfilesStore } from './lib/stores/jobProfiles';
   import { storageError } from './lib/stores/storageError';
+  import { storageNotPersisted } from './lib/stores/storageWarning';
   import type { JobProfile } from './lib/types';
   import Onboarding from './views/Onboarding.svelte';
   import Brand from './lib/components/Brand.svelte';
@@ -77,6 +78,13 @@
   <div role="alert" class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 bg-error text-error-content px-4 py-3 text-sm shadow-lg">
     <span>⚠️ {$storageError}</span>
     <button class="btn btn-xs btn-ghost text-error-content" onclick={() => storageError.set(null)}>Dismiss</button>
+  </div>
+{/if}
+
+{#if $storageNotPersisted && $settingsStore.consentGiven}
+  <div role="alert" class="fixed top-0 left-0 right-0 z-49 flex items-center justify-between gap-3 bg-warning text-warning-content px-4 py-3 text-sm shadow-lg">
+    <span>⚠️ Your data is not protected against browser cleanup. <a href="https://support.google.com/chrome/answer/9658361" target="_blank" rel="noreferrer" class="underline font-medium">Install StarLog as an app</a> to prevent data loss.</span>
+    <button class="btn btn-xs btn-ghost text-warning-content" onclick={() => storageNotPersisted.set(false)}>Dismiss</button>
   </div>
 {/if}
 
