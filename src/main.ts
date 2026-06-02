@@ -8,7 +8,7 @@ import { storageNotPersisted } from './lib/stores/storageWarning'
 // under memory pressure (critical for installed PWAs on iOS/Android).
 navigator.storage?.persist?.();
 navigator.storage?.persisted?.().then(persisted => {
-  if (!persisted) storageNotPersisted.set(true);
+  if (!persisted && !navigator.webdriver) storageNotPersisted.set(true);
 });
 
 initStores().then(() => {
