@@ -472,3 +472,149 @@ test('terminology: flash-cards header reads "Flash cards", not "Review mode"', a
   await expect(page.getByText('StarLog · Flash cards')).toBeVisible();
   await expect(page.getByText('StarLog · Review mode')).toHaveCount(0);
 });
+
+// ─── Job switcher ──────────────────────────────────────────────────────────────
+
+async function openLaunchPad(
+  page: import('@playwright/test').Page,
+  { stories, profiles }: { stories: Story[]; profiles: JobProfile[] }
+) {
+  const { clearStorage } = await import('./helpers');
+  await page.goto('/');
+  await clearStorage(page);
+  await page.route('**/generativelanguage.googleapis.com/**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
+  );
+  const firstProfile = profiles[0];
+  await page.evaluate(
+    ({ s, ps, pid }) => {
+      localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+      localStorage.setItem('starlog_stories', JSON.stringify(s));
+      localStorage.setItem('starlog_job_profiles', JSON.stringify(ps));
+      if (pid) sessionStorage.setItem('starlog_active_profile', pid);
+    },
+    { s: stories, ps: profiles, pid: firstProfile?.id ?? null }
+  );
+  await page.reload();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  await page.getByTestId('start-interview-btn').click();
+  await expect(page.getByTestId('interview-view')).toBeVisible();
+}
+
+test('job switcher: single profile — select present and pre-selected', async ({ page }) => {
+  const story = makeStory({ id: 'sw-story-1' });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['sw-story-1'] });
+  await openLaunchPad(page, { stories: [story], profiles: [profile] });
+
+  const select = page.getByTestId('rehearse-job-select');
+  await expect(select).toBeVisible();
+  // The selected option should contain the profile's role
+  await expect(select).toHaveValue(profile.id);
+});
+
+test('job switcher: switching to profile 2 updates competency list', async ({ page }) => {
+  const storyA = makeStory({ id: 'sw-a', title: 'Story A', competency_tags: [COMPETENCY_FIXTURE[0]] });
+  const storyB = makeStory({ id: 'sw-b', title: 'Story B', competency_tags: [COMPETENCY_FIXTURE[1]] });
+
+  const profile1: JobProfile = {
+    id: 'p1',
+    company: 'Alpha Corp',
+    role: 'EM',
+    jobDescription: 'Job 1',
+    extractedCompetencies: [COMPETENCY_FIXTURE[0]],
+    competencyMap: { [COMPETENCY_FIXTURE[0]]: ['sw-a'] },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    archivedAt: null,
+  };
+  const profile2: JobProfile = {
+    id: 'p2',
+    company: 'Beta Inc',
+    role: 'PM',
+    jobDescription: 'Job 2',
+    extractedCompetencies: [COMPETENCY_FIXTURE[1]],
+    competencyMap: { [COMPETENCY_FIXTURE[1]]: ['sw-b'] },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    archivedAt: null,
+  };
+
+  await openLaunchPad(page, { stories: [storyA, storyB], profiles: [profile1, profile2] });
+
+  // Profile 1 competencies visible initially
+  await expect(page.getByText(COMPETENCY_FIXTURE[0])).toBeVisible();
+
+  // Switch to profile 2
+  await page.getByTestId('rehearse-job-select').selectOption('p2');
+
+  // Profile 2 competencies now visible
+  await expect(page.getByText(COMPETENCY_FIXTURE[1])).toBeVisible();
+  // Profile 1 competency gone
+  await expect(page.getByText(COMPETENCY_FIXTURE[0])).toHaveCount(0);
+});
+
+test('job switcher: switching to "All stories" shows all stories', async ({ page }) => {
+  const storyA = makeStory({ id: 'all-a', title: 'Alpha Story' });
+  const storyB = makeStory({ id: 'all-b', title: 'Beta Story' });
+
+  const profile: JobProfile = {
+    id: 'p-all',
+    company: 'Corp',
+    role: 'Dev',
+    jobDescription: 'Job',
+    extractedCompetencies: [COMPETENCY_FIXTURE[0]],
+    competencyMap: { [COMPETENCY_FIXTURE[0]]: ['all-a'] },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    archivedAt: null,
+  };
+
+  await openLaunchPad(page, { stories: [storyA, storyB], profiles: [profile] });
+
+  // Initially only 1 story mapped
+  await expect(page.getByTestId('rehearse-subtitle')).toContainText('1 story');
+
+  // Switch to "All stories"
+  await page.getByTestId('rehearse-job-select').selectOption('');
+
+  // Should now show both stories (2 stories total)
+  await expect(page.getByTestId('rehearse-subtitle')).toContainText('2 stories');
+});
+
+test('job switcher: sessionStorage updated after switching to profile 2', async ({ page }) => {
+  const storyA = makeStory({ id: 'ss-a' });
+  const storyB = makeStory({ id: 'ss-b' });
+
+  const profile1: JobProfile = {
+    id: 'ss-p1',
+    company: 'CorpA',
+    role: 'Dev',
+    jobDescription: 'J1',
+    extractedCompetencies: [COMPETENCY_FIXTURE[0]],
+    competencyMap: { [COMPETENCY_FIXTURE[0]]: ['ss-a'] },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    archivedAt: null,
+  };
+  const profile2: JobProfile = {
+    id: 'ss-p2',
+    company: 'CorpB',
+    role: 'Lead',
+    jobDescription: 'J2',
+    extractedCompetencies: [COMPETENCY_FIXTURE[1]],
+    competencyMap: { [COMPETENCY_FIXTURE[1]]: ['ss-b'] },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    archivedAt: null,
+  };
+
+  await openLaunchPad(page, { stories: [storyA, storyB], profiles: [profile1, profile2] });
+
+  // Switch to profile 2
+  await page.getByTestId('rehearse-job-select').selectOption('ss-p2');
+
+  // Check sessionStorage updated
+  const storedId = await page.evaluate(() => sessionStorage.getItem('starlog_active_profile'));
+  expect(storedId).toBe('ss-p2');
+});
