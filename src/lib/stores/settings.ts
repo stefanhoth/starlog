@@ -22,7 +22,7 @@ function createSettingsStore() {
   const { subscribe, set, update } = writable<Settings>({ ...defaults });
 
   async function init(): Promise<void> {
-    const stored = await loadWithFallback<Settings | null>(DB_KEY, LS_KEY, null);
+    const stored = await loadWithFallback<Settings | null>(DB_KEY, LS_KEY, null, { removeAfterMigration: true });
     set(stored ? { ...defaults, ...stored } : { ...defaults });
   }
 

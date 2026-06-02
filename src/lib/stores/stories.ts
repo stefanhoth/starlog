@@ -9,7 +9,7 @@ const LS_KEY = 'starlog_stories';
 async function persist(stories: Story[]): Promise<void> {
   try {
     const db = await getDB();
-    await persistToDB(db, DB_KEY, stories);
+    await persistToDB(db, DB_KEY, stories, LS_KEY);
   } catch (err) {
     storageError.set('Could not save data. Your changes may be lost after reload.');
     console.error('[starlog] stories persist failed:', err);

@@ -51,7 +51,12 @@ export function getDB(): Promise<StarlogDB> {
  * Reads a JSON value from the data store, falls back to snapshots if missing,
  * then falls back to localStorage. Migrates to IndexedDB on first access.
  */
-export async function loadWithFallback<T>(key: string, lsKey: string, empty: T): Promise<T> {
+export async function loadWithFallback<T>(
+  key: string,
+  lsKey: string,
+  empty: T,
+  { removeAfterMigration = false } = {},
+): Promise<T> {
   const db = await getDB();
 
   let raw = await db.get('data', key);
@@ -68,12 +73,15 @@ export async function loadWithFallback<T>(key: string, lsKey: string, empty: T):
     }
   }
 
-  // One-time migration from localStorage
+  // Migration / recovery from localStorage (one-time for settings; ongoing mirror for data stores)
   try {
     const lsRaw = localStorage.getItem(lsKey);
     if (lsRaw) {
       const data = JSON.parse(lsRaw) as T;
       await persistToDB(db, key, data);
+      if (removeAfterMigration) {
+        localStorage.removeItem(lsKey);
+      }
       return data;
     }
   } catch {
@@ -86,8 +94,10 @@ export async function loadWithFallback<T>(key: string, lsKey: string, empty: T):
 /**
  * Writes value to the data store and updates the rolling snapshot
  * (snapshot = the previous known-good state, one write behind).
+ * Pass lsKey to also mirror the value to localStorage as a backup against IDB eviction.
+ * Only use lsKey for non-sensitive data (never for settings/credentials).
  */
-export async function persistToDB<T>(db: StarlogDB, key: string, value: T): Promise<void> {
+export async function persistToDB<T>(db: StarlogDB, key: string, value: T, lsKey?: string): Promise<void> {
   const tx = db.transaction(['data', 'snapshots'], 'readwrite');
   const current = tx.objectStore('data').get(key);
   const prev = await current;
@@ -97,4 +107,11 @@ export async function persistToDB<T>(db: StarlogDB, key: string, value: T): Prom
   }
   tx.objectStore('data').put(JSON.stringify(value), key);
   await tx.done;
+  if (lsKey) {
+    try {
+      localStorage.setItem(lsKey, JSON.stringify(value));
+    } catch {
+      // QuotaExceededError — mirror is best-effort, never blocks the IDB write
+    }
+  }
 }
