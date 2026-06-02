@@ -24,6 +24,20 @@ This repo defines specialist agents in `.claude/agents/`. Their full description
 | `senior-engineer` | architecture, Svelte 5 idioms, IndexedDB migrations, maintainability |
 | `test-engineer` | test coverage and strategy (writes & runs Playwright tests) |
 
+## PR Workflow
+
+For every ticket, follow this sequence exactly:
+
+1. `git fetch origin main` — get the latest before starting.
+2. Start work on a branch based on the fetched `origin/main`.
+3. Develop and run the full test suite until green.
+4. `git fetch origin main && git rebase origin/main` — rebase *immediately before pushing* to ensure the branch is up to date (branches behind main block merging on GitHub).
+5. `git push -u origin <branch>` — push the rebased branch.
+6. `gh pr create` — open the PR.
+7. Ask Stefan: **"Manual review or auto-merge?"**
+
+**Never stop after step 3 and ask "should I open a PR?"** — assume yes, always.
+
 ## What's New Changelog
 
 When opening a new PR or creating a GitHub issue for a user-facing change, check whether the What's New changelog (`src/lib/changelog.ts`) should be updated. If the change introduces a new feature, a notable improvement, or a fix that users would care about, ask the user if they want to add an entry before finalising the PR.
