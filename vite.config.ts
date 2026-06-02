@@ -30,6 +30,9 @@ export default defineConfig(({ command }) => ({
     }),
   ],
   base: command === 'build' ? '/starlog/' : '/',
+  build: {
+    sourcemap: true,
+  },
   define: {
     __APP_VERSION__: JSON.stringify(process.env.APP_VERSION ?? 'dev'),
   },
