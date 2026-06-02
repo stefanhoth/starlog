@@ -48,6 +48,12 @@
     return Math.round((covered / total) * 100);
   }
 
+  let mainEl = $state<HTMLElement | null>(null);
+
+  $effect(() => {
+    if (mainEl && $currentView) mainEl.scrollTop = 0;
+  });
+
   function startRehearse() {
     sessionStorage.setItem('starlog_interview_submode', 'launch');
     navigate('interview');
@@ -238,7 +244,7 @@
     </aside>
 
     <!-- ── Main ───────────────────────────────────────────────────── -->
-    <main class="flex-1 overflow-y-auto bg-base-200 pb-16 md:pb-0" data-testid="main-content">
+    <main class="flex-1 overflow-y-auto bg-base-200 pb-16 md:pb-0" data-testid="main-content" bind:this={mainEl}>
       {#if $currentView === 'job-hub'}
         <JobHub />
       {:else if $currentView === 'gap-fill'}
