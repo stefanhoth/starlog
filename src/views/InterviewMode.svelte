@@ -10,8 +10,8 @@
 
   const SUBMODES: Submode[] = ['launch', 'read', 'train-question', 'train-timer'];
 
-  const mode = (sessionStorage.getItem('starlog_interview_mode') ?? 'profile') as InterviewMode;
-  const profileId = $activeProfileId || (sessionStorage.getItem('starlog_active_profile') ?? '');
+  let mode = $state<InterviewMode>((sessionStorage.getItem('starlog_interview_mode') ?? 'profile') as InterviewMode);
+  let profileId = $state($activeProfileId || (sessionStorage.getItem('starlog_active_profile') ?? ''));
   const rawSubmode = sessionStorage.getItem('starlog_interview_submode');
   let submode = $state<Submode>(
     SUBMODES.includes(rawSubmode as Submode) ? (rawSubmode as Submode) : 'launch'
@@ -58,6 +58,27 @@
 
   function exit() {
     navigate(mode === 'profile' ? 'job-hub' : 'story-bank');
+  }
+
+  function switchJob(id: string | null) {
+    if (id === null) {
+      mode = 'library';
+      profileId = '';
+      sessionStorage.setItem('starlog_interview_mode', 'library');
+      sessionStorage.removeItem('starlog_active_profile');
+      // Do NOT clear activeProfileId — that would trigger App.svelte's
+      // auto-select effect and navigate away from the interview view.
+    } else {
+      mode = 'profile';
+      profileId = id;
+      sessionStorage.setItem('starlog_interview_mode', 'profile');
+      sessionStorage.setItem('starlog_active_profile', id);
+      activeProfileId.set(id);
+    }
+    // Reset navigation state when switching
+    groupIdx = 0;
+    storyIdx = 0;
+    expanded = false;
   }
   function nextStory() {
     if (!currentGroup) return;
@@ -203,13 +224,26 @@
     </div>
 
     <div class="flex-1 p-8 max-w-2xl mx-auto w-full">
-      <h1 class="text-2xl font-bold mb-1">
-        {profile ? `${profile.role} · ${profile.company}` : 'All stories'}
-      </h1>
-      <p class="text-base-content/60 text-sm mb-8">
-        {groups.length} competencie{groups.length === 1 ? 'y' : 's'} ready ·
-        {allStories.length} stor{allStories.length === 1 ? 'y' : 'ies'}
-      </p>
+      <div class="mb-8">
+        <label for="rehearse-job-select" class="text-xs text-base-content/50 uppercase tracking-widest mb-1 block">Rehearse for</label>
+        <select
+          id="rehearse-job-select"
+          class="select select-bordered select-sm w-full max-w-sm"
+          aria-label="Rehearse for job"
+          data-testid="rehearse-job-select"
+          value={profileId || ''}
+          onchange={(e) => switchJob((e.target as HTMLSelectElement).value || null)}
+        >
+          <option value="">All stories</option>
+          {#each $jobProfilesStore.filter(p => !p.archivedAt) as p (p.id)}
+            <option value={p.id}>{p.role} · {p.company}</option>
+          {/each}
+        </select>
+        <p class="text-base-content/60 text-sm mt-2" data-testid="rehearse-subtitle">
+          {groups.length} competencie{groups.length === 1 ? 'y' : 's'} ready ·
+          {allStories.length} stor{allStories.length === 1 ? 'y' : 'ies'}
+        </p>
+      </div>
 
       {#if allStories.length === 0}
         <div class="text-center py-16 text-base-content/40">
