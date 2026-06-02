@@ -202,6 +202,35 @@ test('profile entry: competencies with no mapped stories are skipped', async ({ 
   await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[2]);
 });
 
+test('profile entry: launch pad offers exactly three modes, no Live', async ({ page }) => {
+  const story = makeStory({ id: 'story-1' });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['story-1'] });
+  const { clearStorage } = await import('./helpers');
+  await page.goto('/');
+  await clearStorage(page);
+  await page.evaluate(
+    ({ s, p }) => {
+      localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+      localStorage.setItem('starlog_stories', JSON.stringify(s));
+      localStorage.setItem('starlog_job_profiles', JSON.stringify([p]));
+      sessionStorage.setItem('starlog_active_profile', p.id);
+    },
+    { s: [story], p: profile }
+  );
+  await page.reload();
+
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  await page.getByTestId('start-interview-btn').click();
+  await expect(page.getByTestId('interview-view')).toBeVisible();
+
+  // The three supported modes are present…
+  await expect(page.getByTestId('mode-read')).toBeVisible();
+  await expect(page.getByTestId('mode-train-question')).toBeVisible();
+  await expect(page.getByTestId('mode-train-timer')).toBeVisible();
+  // …and Live is gone for good.
+  await expect(page.getByTestId('mode-live')).toHaveCount(0);
+});
+
 test('profile entry: ESC exits to job hub', async ({ page }) => {
   const story = makeStory({ id: 'story-1' });
   const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['story-1'] });
