@@ -239,3 +239,178 @@ test('profile entry: ESC exits to job hub', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('job-hub-view')).toBeVisible();
 });
+
+// ─── Drill: rating persistence ────────────────────────────────────────────────
+
+async function seedAndOpenDrill(
+  page: import('@playwright/test').Page,
+  story: Story,
+  profile: JobProfile
+) {
+  const { clearStorage, readDB } = await import('./helpers');
+  await page.goto('/');
+  await clearStorage(page);
+  await page.route('**/generativelanguage.googleapis.com/**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
+  );
+  await page.evaluate(
+    ({ s, p }) => {
+      localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+      localStorage.setItem('starlog_stories', JSON.stringify([s]));
+      localStorage.setItem('starlog_job_profiles', JSON.stringify([p]));
+      sessionStorage.setItem('starlog_active_profile', p.id);
+    },
+    { s: story, p: profile }
+  );
+  await page.reload();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  await page.getByTestId('start-interview-btn').click();
+  await expect(page.getByTestId('interview-view')).toBeVisible();
+  await page.getByTestId('mode-train-timer').click();
+  await expect(page.getByTestId('interview-view')).toBeVisible();
+  return { readDB };
+}
+
+test('drill: clicking a rating button persists rank to story', async ({ page }) => {
+  const story = makeStory({ id: 'rated-story', rank: null });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['rated-story'] });
+  const { readDB } = await seedAndOpenDrill(page, story, profile);
+
+  // Button exists and is clickable
+  await expect(page.getByTestId('rating-4')).toBeVisible();
+  await page.getByTestId('rating-4').click();
+
+  // Selected style applied immediately
+  await expect(page.getByTestId('rating-4')).toHaveClass(/border-primary/);
+
+  // Persisted to DB
+  const stories = await readDB(page, 'stories', []) as Story[];
+  const saved = stories.find(s => s.id === 'rated-story');
+  expect(saved?.rank).toBe(4);
+});
+
+test('drill: keyboard shortcut (1–5) persists rank to story', async ({ page }) => {
+  const story = makeStory({ id: 'kb-story', rank: null });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['kb-story'] });
+  const { readDB } = await seedAndOpenDrill(page, story, profile);
+
+  await page.keyboard.press('2');
+  await expect(page.getByTestId('rating-2')).toHaveClass(/border-primary/);
+
+  const stories = await readDB(page, 'stories', []) as Story[];
+  const saved = stories.find(s => s.id === 'kb-story');
+  expect(saved?.rank).toBe(2);
+});
+
+test('drill: rating persists through reload (round-trip)', async ({ page }) => {
+  const story = makeStory({ id: 'reload-story', rank: null });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['reload-story'] });
+  await seedAndOpenDrill(page, story, profile);
+
+  await page.getByTestId('rating-5').click();
+  await expect(page.getByTestId('rating-5')).toHaveClass(/border-primary/);
+
+  // Navigate away and back to confirm persistence
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  await page.getByTestId('nav-story-bank').click();
+  await expect(page.getByTestId('story-bank-view')).toBeVisible();
+  await page.locator('[data-testid="story-row"]').first().click();
+  // The readiness stars in StoryDetail should reflect rank=5
+  await expect(page.getByTestId('story-detail-view')).toBeVisible();
+  const stars = page.getByTestId('readiness-star');
+  await expect(stars.nth(4)).toHaveClass(/text-indigo/);
+});
+
+test('drill: rating on last card persists even when exiting via ESC', async ({ page }) => {
+  const story = makeStory({ id: 'esc-story', rank: null });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['esc-story'] });
+  const { readDB } = await seedAndOpenDrill(page, story, profile);
+
+  await page.getByTestId('rating-3').click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+
+  const stories = await readDB(page, 'stories', []) as Story[];
+  const saved = stories.find(s => s.id === 'esc-story');
+  expect(saved?.rank).toBe(3);
+});
+
+test('drill: advancing card does not clobber rank of unrated story', async ({ page }) => {
+  const s1 = makeStory({ id: 's1', rank: 5, title: 'Story A' });
+  const s2 = makeStory({ id: 's2', rank: null, title: 'Story B' });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['s1', 's2'] });
+  const { readDB } = await seedAndOpenDrill(page, s1, profile);
+  // Override: need two stories — re-seed
+  const { clearStorage } = await import('./helpers');
+  await clearStorage(page);
+  await page.evaluate(
+    ({ stories, p }) => {
+      localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+      localStorage.setItem('starlog_stories', JSON.stringify(stories));
+      localStorage.setItem('starlog_job_profiles', JSON.stringify([p]));
+      sessionStorage.setItem('starlog_active_profile', p.id);
+    },
+    { stories: [s1, s2], p: profile }
+  );
+  await page.reload();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  await page.getByTestId('start-interview-btn').click();
+  await page.getByTestId('mode-train-timer').click();
+  await expect(page.getByTestId('interview-story-title')).toBeVisible();
+
+  // Advance without rating — s2 rank should remain null
+  await page.getByTestId('next-story-btn').click();
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story B');
+
+  await page.keyboard.press('Escape');
+  const stories = await readDB(page, 'stories', []) as Story[];
+  const saved1 = stories.find(s => s.id === 's1');
+  const saved2 = stories.find(s => s.id === 's2');
+  expect(saved1?.rank).toBe(5); // unchanged
+  expect(saved2?.rank).toBeNull(); // not clobbered
+});
+
+test('drill: card with existing rank shows stored rating pre-selected', async ({ page }) => {
+  const story = makeStory({ id: 'preseeded', rank: 4 });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['preseeded'] });
+  await seedAndOpenDrill(page, story, profile);
+
+  // Button 4 should appear selected on entry
+  await expect(page.getByTestId('rating-4')).toHaveClass(/border-primary/);
+});
+
+// ─── Terminology ──────────────────────────────────────────────────────────────
+
+test('terminology: launch pad header reads "Rehearse", not "Interview Prep"', async ({ page }) => {
+  const story = makeStory({ id: 'term-story' });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['term-story'] });
+  const { clearStorage } = await import('./helpers');
+  await page.goto('/');
+  await clearStorage(page);
+  await page.evaluate(
+    ({ s, p }) => {
+      localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+      localStorage.setItem('starlog_stories', JSON.stringify([s]));
+      localStorage.setItem('starlog_job_profiles', JSON.stringify([p]));
+      sessionStorage.setItem('starlog_active_profile', p.id);
+    },
+    { s: story, p: profile }
+  );
+  await page.reload();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  await page.getByTestId('start-interview-btn').click();
+  await expect(page.getByTestId('interview-view')).toBeVisible();
+
+  await expect(page.getByText('StarLog · Rehearse')).toBeVisible();
+  await expect(page.getByText('StarLog · Interview Prep')).toHaveCount(0);
+});
+
+test('terminology: flash-cards header reads "Flash cards", not "Review mode"', async ({ page }) => {
+  const story = makeStory();
+  await seedAndOpenInterview(page, { stories: [story], mode: 'library' });
+
+  await expect(page.getByText('StarLog · Flash cards')).toBeVisible();
+  await expect(page.getByText('StarLog · Review mode')).toHaveCount(0);
+});

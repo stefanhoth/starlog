@@ -1,19 +1,12 @@
 <script lang="ts">
   import type { StoryQuality } from '../types';
+  import { READINESS_STATES } from '../readiness';
 
   const COACHING: Record<string, string> = {
     situation: 'Set the scene: name the company/team, time period, and what was at stake.',
     task:      'Who set this goal? Naming the stakeholder makes the stakes obvious.',
     result:    'Quantify the outcome — numbers, percentages, timelines, or team size.',
   };
-
-  const READINESS_STATES = [
-    { rank: 1, label: 'not ready' },
-    { rank: 2, label: 'shaky'     },
-    { rank: 3, label: 'ok'        },
-    { rank: 4, label: 'confident' },
-    { rank: 5, label: 'nailed it' },
-  ];
 
   interface Props {
     situation: string;
