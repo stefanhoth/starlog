@@ -240,6 +240,64 @@ test('profile entry: ESC exits to job hub', async ({ page }) => {
   await expect(page.getByTestId('job-hub-view')).toBeVisible();
 });
 
+test('launch pad (profile mode): ESC exits to job hub', async ({ page }) => {
+  const story = makeStory({ id: 'story-1' });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['story-1'] });
+  // Seed and navigate to the launch pad but do NOT click a mode card
+  const { clearStorage } = await import('./helpers');
+  await page.goto('/');
+  await clearStorage(page);
+  await page.route('**/generativelanguage.googleapis.com/**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
+  );
+  await page.evaluate(
+    ({ s, p }) => {
+      localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+      localStorage.setItem('starlog_stories', JSON.stringify([s]));
+      localStorage.setItem('starlog_job_profiles', JSON.stringify([p]));
+      sessionStorage.setItem('starlog_active_profile', p.id);
+    },
+    { s: story, p: profile }
+  );
+  await page.reload();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  await page.getByTestId('start-interview-btn').click();
+  // Now on the launch pad (submode=launch), do NOT pick a mode
+  await expect(page.getByTestId('interview-view')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+});
+
+test('launch pad (library mode): ESC exits to story bank', async ({ page }) => {
+  const story = makeStory({ id: 'story-1' });
+  // Seed and navigate to the launch pad via library mode
+  const { clearStorage } = await import('./helpers');
+  await page.goto('/');
+  await clearStorage(page);
+  await page.route('**/generativelanguage.googleapis.com/**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
+  );
+  await page.evaluate(
+    ({ s }) => {
+      localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+      localStorage.setItem('starlog_stories', JSON.stringify([s]));
+    },
+    { s: story }
+  );
+  await page.reload();
+  await page.getByTestId('nav-story-bank').click();
+  await expect(page.getByTestId('story-bank-view')).toBeVisible();
+  await page.getByTestId('interview-btn').click();
+  // Library mode goes directly to read submode, not launch pad — so ESC should exit to story bank
+  await expect(page.getByTestId('interview-view')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('story-bank-view')).toBeVisible();
+});
+
 // ─── Drill: rating persistence ────────────────────────────────────────────────
 
 async function seedAndOpenDrill(
