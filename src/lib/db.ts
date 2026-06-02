@@ -12,10 +12,35 @@ let _db: Promise<StarlogDB> | null = null;
 
 export function getDB(): Promise<StarlogDB> {
   if (!_db) {
-    _db = openDB<StarlogSchema>('starlog', 1, {
-      upgrade(db) {
-        db.createObjectStore('data');
-        db.createObjectStore('snapshots');
+    _db = openDB<StarlogSchema>('starlog', 2, {
+      async upgrade(db, oldVersion, _newVersion, tx) {
+        // Create stores only on a fresh install (not present when upgrading from v1).
+        if (oldVersion < 1) {
+          db.createObjectStore('data');
+          db.createObjectStore('snapshots');
+        }
+
+        // v1 → v2: reset rank === 3 (the pre-#103 auto-default) to null (unrated).
+        // Runs exactly once per browser thanks to the version gate.
+        if (oldVersion < 2) {
+          // Migrate stories already in the IDB data and snapshots stores.
+          for (const storeName of ['data', 'snapshots'] as const) {
+            const raw = await tx.objectStore(storeName).get('stories');
+            if (!raw) continue;
+            try {
+              const stories = JSON.parse(raw) as Array<Record<string, unknown>>;
+              if (stories.some(s => s['rank'] === 3)) {
+                const migrated = stories.map(s =>
+                  s['rank'] === 3 ? { ...s, rank: null } : s
+                );
+                await tx.objectStore(storeName).put(JSON.stringify(migrated), 'stories');
+              }
+            } catch {
+              // corrupted blob — leave as-is rather than destroying data
+            }
+          }
+
+        }
       },
     });
   }
