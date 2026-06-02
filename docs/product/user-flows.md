@@ -78,7 +78,6 @@ Entry: Job Hub "Start interview prep →" (mode `profile`), Story Bank "Review" 
    - **Known gap:** rating is not saved back to the story's `rank`.
    - Space toggles timer, → next, Esc exits.
 5. Exit returns to Job Hub (profile) or Story Bank (library).
-- **Live mode (`live`)** exists (⌘K palette) but is not reachable from the launch pad.
 
 ## 7. Returning user: settings update (`Onboarding.svelte` settings mode)
 

@@ -93,7 +93,6 @@ A user tells StarLog about things that happened in their career — by speaking,
 | Flash cards (`read`) | Keyboard-navigable deck: ←→ stories, ↑↓ competency groups, space to expand full STAR. | Shipped |
 | Mock interview (`train-question`) | Question-first ("Tell me about a time you demonstrated X"), think-timer, space to reveal. | Shipped |
 | Drill with timer (`train-timer`) | 90s target bar with over-time indicator, 1–5 self-rating. | Shipped |
-| Live mode (`live`) | ⌘K-style command palette to find a competency's go-to story fast. | **Partial / hidden** — fully implemented but not reachable from the launch pad. |
 
 ### Data (`Data.svelte`)
 | Feature | Description | Status |
@@ -114,7 +113,6 @@ A user tells StarLog about things that happened in their career — by speaking,
 
 ## Known gaps and deferred features
 
-- **Live mode is orphaned.** The `live` submode in `InterviewMode.svelte` is complete (search, competency shortcuts, go-to story display) but has no launch-pad card — the launch pad only offers `read`, `train-question`, and `train-timer`. Its "⏎ mark used" affordance is also non-functional.
 - **Self-ratings in Drill mode are not persisted.** The 1–5 rating in `train-timer` (`selectedRating`) updates UI only; it is never written back to the story's `rank`. This is a coverage-model gap: rehearsal feedback doesn't flow into the readiness model that Story Bank sorts on.
 - **Quality "legend" drift.** `StoryCard.svelte` surfaces an AI-quality color dot (green/amber/red) that no primary view shows; the active product leads with user **readiness** stars instead. `Counter.svelte` is a leftover scaffold component.
 - **No multi-device sync by design.** Stated explicitly in the privacy popover; Export/Import is the only cross-device path.

@@ -4,13 +4,17 @@
   import { navigate, activeProfileId } from '../lib/stores/view';
   import type { Story } from '../lib/types';
 
-  type Submode = 'launch' | 'read' | 'train-question' | 'train-timer' | 'live';
+  type Submode = 'launch' | 'read' | 'train-question' | 'train-timer';
   type InterviewMode = 'library' | 'profile';
+
+  const SUBMODES: Submode[] = ['launch', 'read', 'train-question', 'train-timer'];
 
   const mode = (sessionStorage.getItem('starlog_interview_mode') ?? 'profile') as InterviewMode;
   const profileId = $activeProfileId || (sessionStorage.getItem('starlog_active_profile') ?? '');
-  const rawSubmode = (sessionStorage.getItem('starlog_interview_submode') ?? 'launch') as Submode;
-  let submode = $state<Submode>(rawSubmode);
+  const rawSubmode = sessionStorage.getItem('starlog_interview_submode');
+  let submode = $state<Submode>(
+    SUBMODES.includes(rawSubmode as Submode) ? (rawSubmode as Submode) : 'launch'
+  );
 
   // ── Story groups ───────────────────────────────────────────────────
   type Group = { competency: string | null; stories: Story[] };
@@ -141,23 +145,6 @@
     timerElapsed = 0; timerRunning = true; selectedRating = null;
   }
 
-  // ── Live: ⌘K palette ─────────────────────────────────────────────
-  let liveQuery = $state('');
-  let liveSearchEl = $state<HTMLInputElement | null>(null);
-  $effect(() => { if (liveSearchEl) liveSearchEl.focus(); });
-  const liveResults = $derived(
-    liveQuery.trim().length === 0
-      ? groups
-      : groups.filter(g =>
-          g.competency?.toLowerCase().includes(liveQuery.toLowerCase()) ||
-          g.stories.some(s => s.title.toLowerCase().includes(liveQuery.toLowerCase()))
-        )
-  );
-  let liveSelectedGroup = $state<Group | null>(null);
-  $effect(() => {
-    liveSelectedGroup = liveResults[0] ?? null;
-  });
-
   // ── Keyboard handler ──────────────────────────────────────────────
   function handleKeydown(e: KeyboardEvent) {
     if (submode === 'read') {
@@ -177,8 +164,6 @@
       if (e.key >= '1' && e.key <= '5') selectedRating = parseInt(e.key);
       if (e.key === 'ArrowRight') nextTimerStory();
       if (e.key === ' ') { e.preventDefault(); toggleTimer(); }
-      if (e.key === 'Escape') exit();
-    } else if (submode === 'live') {
       if (e.key === 'Escape') exit();
     }
   }
@@ -511,80 +496,5 @@
         <button onclick={nextTimerStory} data-testid="next-story-btn">next →</button>
       </div>
     {/if}
-  </div>
-
-<!-- ───────────────────────────────────────────────────────────────── -->
-<!-- LIVE: ⌘K palette                                                 -->
-<!-- ───────────────────────────────────────────────────────────────── -->
-{:else if submode === 'live'}
-  <div class="min-h-screen bg-neutral text-neutral-content flex flex-col" data-testid="interview-view">
-
-    <!-- Tiny header -->
-    <div class="flex justify-between items-center px-5 py-3 border-b border-neutral-700 text-xs text-neutral-content/50">
-      <span class="flex items-center gap-2"><span class="text-primary">★</span> StarLog · Live mode</span>
-      <span>⌘K open · esc close</span>
-    </div>
-
-    <div class="flex-1 flex flex-col p-6 gap-4 max-w-2xl mx-auto w-full">
-
-      <!-- Search input -->
-      <div class="flex items-center gap-3 border-2 border-primary/40 rounded-xl px-4 py-3 bg-neutral-800">
-        <span class="text-primary text-xl">⌘</span>
-        <input
-          class="flex-1 bg-transparent text-xl font-semibold placeholder-neutral-content/30 outline-none"
-          placeholder="type a competency…"
-          bind:value={liveQuery}
-          bind:this={liveSearchEl}
-        />
-        <span class="text-xs text-neutral-content/40">or 1–{groups.length} for competency</span>
-      </div>
-
-      <!-- Results -->
-      {#if liveSelectedGroup && liveSelectedGroup.stories.length > 0}
-        {@const story = liveSelectedGroup.stories[0]}
-        <div class="border border-neutral-700 rounded-2xl bg-neutral-800 p-5 flex flex-col gap-4">
-          <div class="flex items-center justify-between">
-            {#if liveSelectedGroup.competency}
-              <span class="badge badge-outline text-primary border-primary/40 text-xs">
-                {liveSelectedGroup.competency}
-              </span>
-            {/if}
-            <span class="text-xs text-primary font-bold">★ go-to</span>
-          </div>
-          <div class="text-2xl font-bold">{story.title}</div>
-          <div class="flex flex-col gap-2">
-            <div class="text-xs text-primary/80 uppercase tracking-widest font-semibold">2-line opening</div>
-            {#each story.star.action.slice(0, 2) as line, i}
-              <div class="text-base text-neutral-content/80 flex gap-3">
-                <span class="text-primary font-bold">{i + 1}.</span><span>{line}</span>
-              </div>
-            {/each}
-          </div>
-          <p class="text-xs text-neutral-content/40">↓ expand full STAR · ⏎ mark used</p>
-        </div>
-      {:else if liveQuery}
-        <div class="text-center py-10 text-neutral-content/40 text-sm">No match for "{liveQuery}"</div>
-      {/if}
-
-      <!-- Competency shortcuts -->
-      <div class="flex flex-wrap gap-2 mt-auto">
-        {#each groups as g, i}
-          <button
-            class="text-xs px-3 py-1.5 rounded-lg border transition-colors
-              {liveSelectedGroup === g
-                ? 'border-primary bg-primary/15 text-primary'
-                : 'border-neutral-700 text-neutral-content/50 hover:border-primary/40'}"
-            onclick={() => liveSelectedGroup = g}
-          >
-            <span class="font-mono opacity-60 mr-1">{i + 1}</span>
-            {g.competency ?? 'All'}
-          </button>
-        {/each}
-      </div>
-    </div>
-
-    <div class="px-6 pb-4 text-center">
-      <button class="btn btn-ghost btn-sm text-neutral-content/40" onclick={exit}>esc · exit</button>
-    </div>
   </div>
 {/if}
