@@ -5,6 +5,7 @@
   import { storageError } from './lib/stores/storageError';
   import { storiesStore } from './lib/stores/stories';
   import { exportData } from './lib/backup';
+  import { deferredInstallPrompt } from './lib/stores/pwaInstall';
   import type { JobProfile } from './lib/types';
   import Onboarding from './views/Onboarding.svelte';
   import Brand from './lib/components/Brand.svelte';
@@ -101,8 +102,58 @@
 
   const hasUnseen = $derived($lastSeenDate !== CHANGELOG[0]?.date);
 
+  // PWA install prompt
+  let isStandalone = $state(false);
+  let isIos = $state(false);
+  let installDismissed = $state(
+    typeof localStorage !== 'undefined'
+      ? localStorage.getItem('starlog_pwa_prompt_dismissed') !== null
+      : true
+  );
+  let iosDismissed = $state(
+    typeof localStorage !== 'undefined'
+      ? localStorage.getItem('starlog_pwa_ios_dismissed') !== null
+      : true
+  );
+
+  const showInstallPrompt = $derived(
+    $settingsStore.consentGiven &&
+    !isStandalone &&
+    !installDismissed &&
+    $deferredInstallPrompt !== null
+  );
+
+  const showIosHint = $derived(
+    $settingsStore.consentGiven &&
+    !isStandalone &&
+    isIos &&
+    !iosDismissed &&
+    $deferredInstallPrompt === null
+  );
+
+  async function triggerInstall() {
+    const prompt = $deferredInstallPrompt;
+    if (!prompt) return;
+    await prompt.prompt();
+    deferredInstallPrompt.set(null);
+    localStorage.setItem('starlog_pwa_prompt_dismissed', '1');
+    installDismissed = true;
+  }
+
+  function dismissInstallPrompt() {
+    localStorage.setItem('starlog_pwa_prompt_dismissed', '1');
+    installDismissed = true;
+  }
+
+  function dismissIosHint() {
+    localStorage.setItem('starlog_pwa_ios_dismissed', '1');
+    iosDismissed = true;
+  }
+
   onMount(() => {
     initWhatsNew();
+    isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
   });
 </script>
 
@@ -121,6 +172,23 @@
       <button class="btn btn-xs btn-info-content border border-info-content/30 hover:bg-info-content/10" onclick={handleBackupDownload} data-testid="backup-reminder-download">Download backup →</button>
       <button class="btn btn-xs btn-ghost text-info-content" onclick={dismissBackupReminder} data-testid="backup-reminder-dismiss">Dismiss</button>
     </div>
+  </div>
+{/if}
+
+{#if showInstallPrompt}
+  <div role="alert" data-testid="pwa-install-nudge" class="fixed top-0 left-0 right-0 z-47 flex items-center justify-between gap-3 bg-base-200 text-base-content px-4 py-3 text-sm shadow-lg border-b border-base-300">
+    <span>📲 Install STARlog as an app for faster access and offline use.</span>
+    <div class="flex items-center gap-2 shrink-0">
+      <button class="btn btn-xs btn-primary" onclick={triggerInstall} data-testid="pwa-install-btn">Install</button>
+      <button class="btn btn-xs btn-ghost" onclick={dismissInstallPrompt} data-testid="pwa-install-dismiss" aria-label="Dismiss install prompt">✕</button>
+    </div>
+  </div>
+{/if}
+
+{#if showIosHint}
+  <div role="alert" data-testid="pwa-ios-hint" class="fixed top-0 left-0 right-0 z-47 flex items-center justify-between gap-3 bg-base-200 text-base-content px-4 py-3 text-sm shadow-lg border-b border-base-300">
+    <span>📲 To install: tap the Share button, then <strong>Add to Home Screen</strong>.</span>
+    <button class="btn btn-xs btn-ghost" onclick={dismissIosHint} data-testid="pwa-ios-dismiss" aria-label="Dismiss install hint">✕</button>
   </div>
 {/if}
 
