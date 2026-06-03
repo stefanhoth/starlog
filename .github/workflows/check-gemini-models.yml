@@ -1,0 +1,23 @@
+name: Check Gemini model availability
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # 08:00 UTC daily
+  workflow_dispatch:        # manual trigger for ad-hoc checks
+
+jobs:
+  check-models:
+    name: Validate configured Gemini model IDs
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Validate model IDs against live Gemini API
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node scripts/check-gemini-models.mjs
