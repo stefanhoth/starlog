@@ -48,10 +48,21 @@ test('Importing a valid backup shows confirmation dialog with counts', async ({ 
     exportedAt: new Date().toISOString(),
     appVersion: '0.0.0',
     stories: [
-      { id: 's1', title: 'A story', competency_tags: [], star: {}, quality: {}, createdAt: '', updatedAt: '', original_language: 'en', notes: '', rank: 3 },
+      {
+        id: 's1', title: 'A story', competency_tags: [],
+        star: { situation: 'S', task: 'T', action: ['A'], result: 'R' },
+        quality: { situation: 'high', task: 'high', action: 'high', result: 'high', notes: '' },
+        createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z',
+        original_language: 'en', notes: '', rank: 3,
+      },
     ],
     jobProfiles: [
-      { id: 'p1', company: 'Acme', role: 'EM', jobDescription: '', extractedCompetencies: [], competencyMap: {}, createdAt: '', updatedAt: '' },
+      {
+        id: 'p1', company: 'Acme', role: 'EM', jobDescription: '',
+        extractedCompetencies: [], competencyMap: {},
+        createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z',
+        archivedAt: null,
+      },
     ],
   });
   const tmpFile = join(tmpdir(), 'backup.starlog.json');
@@ -66,7 +77,13 @@ test('Cancelling import dismisses the confirmation', async ({ page }) => {
   await openDataView(page);
   const bundle = JSON.stringify({
     version: 1, exportedAt: new Date().toISOString(), appVersion: '0.0.0',
-    stories: [{ id: 's1', title: 'T', competency_tags: [], star: {}, quality: {}, createdAt: '', updatedAt: '', original_language: 'en', notes: '', rank: 3 }],
+    stories: [{
+      id: 's1', title: 'T', competency_tags: [],
+      star: { situation: 'S', task: 'T', action: ['A'], result: 'R' },
+      quality: { situation: 'high', task: 'high', action: 'high', result: 'high', notes: '' },
+      createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z',
+      original_language: 'en', notes: '', rank: 3,
+    }],
     jobProfiles: [],
   });
   const tmpFile = join(tmpdir(), 'cancel.starlog.json');
