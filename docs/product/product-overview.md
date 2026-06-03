@@ -8,7 +8,7 @@ A user tells StarLog about things that happened in their career — by speaking,
 
 - **Core promise:** "Walk into every interview with the right story." (Onboarding hero, `Onboarding.svelte`.)
 - **Target user:** an individual job seeker preparing for behavioural interviews — skewing toward experienced / leadership roles, evidenced by the competency vocabulary (`Leadership`, `Manager of Managers`, `Stakeholder Management`, `Hiring`) in `src/lib/competencies.ts`.
-- **Tagline (PWA manifest):** "Log your work stories, map them to competencies, rehearse until you're ready."
+- **Tagline:** "Your experience, shaped into powerful stories." (used across the page title, meta/OG/Twitter descriptions, and PWA manifest.)
 
 ## The five product principles
 
