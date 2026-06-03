@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { ChangelogEntry } from '../changelog';
 
   let {
@@ -9,7 +10,7 @@
     initialVisible?: number;
   } = $props();
 
-  let visibleCount = $state(initialVisible);
+  let visibleCount = $state(untrack(() => initialVisible));
 
   const visibleEntries = $derived(entries.slice(0, visibleCount));
   const hasMore = $derived(visibleCount < entries.length);

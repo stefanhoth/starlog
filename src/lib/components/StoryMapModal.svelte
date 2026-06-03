@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { storiesStore } from '../stores/stories';
   import type { Story } from '../types';
   import StarReadView from './StarReadView.svelte';
@@ -19,7 +19,7 @@
   } = $props();
 
   let search = $state('');
-  let selected = $state<string[]>([...initialIds]);
+  let selected = $state<string[]>(untrack(() => [...initialIds]));
   let expandedStoryId = $state<string | null>(null);
   let searchInputEl = $state<HTMLInputElement | null>(null);
 
