@@ -4,6 +4,7 @@
   import { jobProfilesStore } from './lib/stores/jobProfiles';
   import { storageError } from './lib/stores/storageError';
   import { storageNotPersisted } from './lib/stores/storageWarning';
+  import { deferredInstallPrompt } from './lib/stores/pwaInstall';
   import type { JobProfile } from './lib/types';
   import Onboarding from './views/Onboarding.svelte';
   import Brand from './lib/components/Brand.svelte';
@@ -69,6 +70,67 @@
   let sidebarArchivedOpen = $state(false);
   const hasUnseen = $derived($lastSeenDate !== CHANGELOG[0]?.date);
 
+  // ── PWA install nudge ────────────────────────────────────────────────────
+  const isStandalone = typeof window !== 'undefined'
+    && window.matchMedia('(display-mode: standalone)').matches;
+
+  let pwaDismissed = $state(
+    typeof localStorage !== 'undefined'
+    && localStorage.getItem('starlog_pwa_prompt_dismissed') === '1'
+  );
+  let iosDismissed = $state(
+    typeof localStorage !== 'undefined'
+    && localStorage.getItem('starlog_pwa_ios_dismissed') === '1'
+  );
+
+  // Show the native-install nudge when:
+  //   - user is onboarded
+  //   - browser fired beforeinstallprompt (not iOS/Safari)
+  //   - not already running as installed PWA
+  //   - not already dismissed
+  const showInstallPrompt = $derived(
+    $settingsStore.consentGiven &&
+    $deferredInstallPrompt !== null &&
+    !isStandalone &&
+    !pwaDismissed
+  );
+
+  // Detect iOS: no beforeinstallprompt support AND not standalone
+  const isIos = typeof navigator !== 'undefined'
+    && /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  // Show iOS hint when:
+  //   - user is onboarded
+  //   - iOS device (no beforeinstallprompt)
+  //   - not already standalone
+  //   - not already dismissed
+  const showIosHint = $derived(
+    $settingsStore.consentGiven &&
+    isIos &&
+    $deferredInstallPrompt === null &&
+    !isStandalone &&
+    !iosDismissed
+  );
+
+  async function triggerInstall() {
+    const prompt = $deferredInstallPrompt as (Event & { prompt(): Promise<void> }) | null;
+    if (!prompt) return;
+    await prompt.prompt();
+    deferredInstallPrompt.set(null);
+    pwaDismissed = true;
+  }
+
+  function dismissInstallPrompt() {
+    localStorage.setItem('starlog_pwa_prompt_dismissed', '1');
+    pwaDismissed = true;
+  }
+
+  function dismissIosHint() {
+    localStorage.setItem('starlog_pwa_ios_dismissed', '1');
+    iosDismissed = true;
+  }
+  // ── end PWA install nudge ────────────────────────────────────────────────
+
   onMount(() => {
     initWhatsNew();
   });
@@ -85,6 +147,23 @@
   <div role="alert" class="fixed top-0 left-0 right-0 z-49 flex items-center justify-between gap-3 bg-warning text-warning-content px-4 py-3 text-sm shadow-lg">
     <span>⚠️ Your data is not protected against browser cleanup. <a href="https://support.google.com/chrome/answer/9658361" target="_blank" rel="noreferrer" class="underline font-medium">Install StarLog as an app</a> to prevent data loss.</span>
     <button class="btn btn-xs btn-ghost text-warning-content" onclick={() => storageNotPersisted.set(false)}>Dismiss</button>
+  </div>
+{/if}
+
+{#if showInstallPrompt}
+  <div role="alert" data-testid="pwa-install-nudge" class="fixed top-0 left-0 right-0 z-48 flex items-center justify-between gap-3 bg-info text-info-content px-4 py-3 text-sm shadow-lg">
+    <span>📲 Install StarLog as an app for the best experience — works offline too.</span>
+    <div class="flex items-center gap-2 shrink-0">
+      <button class="btn btn-xs btn-info-content border border-info-content/30 hover:bg-info-content/10" onclick={triggerInstall}>Install</button>
+      <button class="btn btn-xs btn-ghost text-info-content" onclick={dismissInstallPrompt} aria-label="Dismiss install prompt">×</button>
+    </div>
+  </div>
+{/if}
+
+{#if showIosHint}
+  <div role="alert" data-testid="pwa-ios-hint" class="fixed top-0 left-0 right-0 z-48 flex items-center justify-between gap-3 bg-info text-info-content px-4 py-3 text-sm shadow-lg">
+    <span>📲 To install: tap Share → Add to Home Screen</span>
+    <button class="btn btn-xs btn-ghost text-info-content" onclick={dismissIosHint} aria-label="Dismiss iOS install hint">×</button>
   </div>
 {/if}
 
