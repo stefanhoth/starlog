@@ -332,7 +332,7 @@
         </button>
         <button
           data-testid="whats-new-btn"
-          class="btn btn-ghost btn-sm justify-start gap-2 relative w-full"
+          class="relative w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm text-base-content/50 hover:text-base-content hover:bg-base-200 transition-colors"
           onclick={() => showWhatsNew = true}
         >
           ✨ What's New
