@@ -461,16 +461,16 @@ test('terminology: launch pad header reads "Rehearse", not "Interview Prep"', as
   await page.getByTestId('start-interview-btn').click();
   await expect(page.getByTestId('interview-view')).toBeVisible();
 
-  await expect(page.getByText('StarLog · Rehearse')).toBeVisible();
-  await expect(page.getByText('StarLog · Interview Prep')).toHaveCount(0);
+  await expect(page.getByText('STARlog · Rehearse')).toBeVisible();
+  await expect(page.getByText('STARlog · Interview Prep')).toHaveCount(0);
 });
 
 test('terminology: flash-cards header reads "Flash cards", not "Review mode"', async ({ page }) => {
   const story = makeStory();
   await seedAndOpenInterview(page, { stories: [story], mode: 'library' });
 
-  await expect(page.getByText('StarLog · Flash cards')).toBeVisible();
-  await expect(page.getByText('StarLog · Review mode')).toHaveCount(0);
+  await expect(page.getByText('STARlog · Flash cards')).toBeVisible();
+  await expect(page.getByText('STARlog · Review mode')).toHaveCount(0);
 });
 
 // ─── Job switcher ──────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
-# StarLog AI Use Cases
+# STARlog AI Use Cases
 
-A catalogue of every place StarLog calls the Gemini AI: what each call does, where it lives,
+A catalogue of every place STARlog calls the Gemini AI: what each call does, where it lives,
 and how it can fail.
 
 All Gemini access is client-side via `@google/generative-ai`, using the **user's own API key**

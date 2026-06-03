@@ -1,18 +1,19 @@
-# StarLog — Product Overview
+# STARlog — Product Overview
 
-## What StarLog is
+## What STARlog is
 
-StarLog is a **browser-local STAR story library for job interviews**. The mission is simple: help a job seeker walk into any interview with the *right* story ready.
+STARlog is a **browser-local STAR story library for job interviews**. The mission is simple: help a job seeker walk into any interview with the *right* story ready.
 
-A user tells StarLog about things that happened in their career — by speaking, uploading audio, or pasting a rough description. Gemini turns each into a polished STAR story (Situation, Task, Action, Result). Stories live entirely in the browser. The user pastes a job description, Gemini extracts the behavioural competencies that role will test, and the user maps stories to competencies to see coverage and gaps at a glance. Then they rehearse in a dedicated Interview Mode.
+A user tells STARlog about things that happened in their career — by speaking, uploading audio, or pasting a rough description. Gemini turns each into a polished STAR story (Situation, Task, Action, Result). Stories live entirely in the browser. The user pastes a job description, Gemini extracts the behavioural competencies that role will test, and the user maps stories to competencies to see coverage and gaps at a glance. Then they rehearse in a dedicated Interview Mode.
 
 - **Core promise:** "Walk into every interview with the right story." (Onboarding hero, `Onboarding.svelte`.)
 - **Target user:** an individual job seeker preparing for behavioural interviews — skewing toward experienced / leadership roles, evidenced by the competency vocabulary (`Leadership`, `Manager of Managers`, `Stakeholder Management`, `Hiring`) in `src/lib/competencies.ts`.
-- **Tagline (PWA manifest):** "Log your work stories, map them to competencies, rehearse until you're ready."
+- **Tagline:** "Your experience, shaped into powerful stories." (used in the page title, OG/Twitter titles, and the PWA manifest description.)
+- **Meta description:** "Log your experiences. Structure each STAR story. Nail your next interview." (used for the meta/OG/Twitter descriptions, where the title already carries the tagline.)
 
 ## The five product principles
 
-1. **Privacy is a feature, not just a security detail.** All data — stories, job profiles, and the API key — lives in the browser (IndexedDB, with localStorage migration). There is no account and no server. The onboarding privacy popover and security popover (`Onboarding.svelte`) make this an explicit selling point: "Your data never leaves your device", "No StarLog account means no StarLog database that could be breached." API calls go directly from the browser to Google.
+1. **Privacy is a feature, not just a security detail.** All data — stories, job profiles, and the API key — lives in the browser (IndexedDB, with localStorage migration). There is no account and no server. The onboarding privacy popover and security popover (`Onboarding.svelte`) make this an explicit selling point: "Your data never leaves your device", "No STARlog account means no STARlog database that could be breached." API calls go directly from the browser to Google.
 2. **Zero friction to start.** No sign-up. The only setup is pasting a Gemini API key, which is validated live before the user can proceed (`submitKey` is gated on `verifyStatus === 'ok'`). From key entry the user is taken straight to adding their first job.
 3. **Solo-dev reality.** Every feature carries a maintenance cost. The codebase is deliberately small — one router, three persisted stores, one AI module, ~8 views.
 4. **The core loop is sacred.** Capture → Structure → Map → Rehearse. Every shipped surface serves one of these four steps.

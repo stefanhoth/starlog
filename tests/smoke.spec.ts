@@ -18,5 +18,5 @@ test('returning user sees the app shell', async ({ page }) => {
   await page.reload();
   await expect(page.getByTestId('app-shell')).toBeVisible();
   await expect(page.getByTestId('nav')).toBeVisible();
-  await expect(page.getByTestId('nav').getByText('StarLog')).toBeVisible();
+  await expect(page.getByTestId('nav').getByText('STARlog')).toBeVisible();
 });

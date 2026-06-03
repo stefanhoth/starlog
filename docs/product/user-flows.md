@@ -1,4 +1,4 @@
-# StarLog — User Flows
+# STARlog — User Flows
 
 Notation: each flow is a numbered happy path with branch notes for empty/error states. View files in parentheses.
 

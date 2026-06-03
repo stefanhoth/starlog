@@ -10,9 +10,9 @@ export default defineConfig(({ command }) => ({
       registerType: 'autoUpdate',
       base: command === 'build' ? '/starlog/' : '/',
       manifest: {
-        name: 'StarLog',
-        short_name: 'StarLog',
-        description: "Log your work stories, map them to competencies, rehearse until you're ready.",
+        name: 'STARlog',
+        short_name: 'STARlog',
+        description: 'Your experience, shaped into powerful stories.',
         start_url: '/starlog/',
         scope: '/starlog/',
         display: 'standalone',
