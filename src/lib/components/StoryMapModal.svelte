@@ -93,6 +93,7 @@
   tabindex="-1"
   data-testid="story-map-modal"
   onclick={(e) => e.target === e.currentTarget && handleCancel()}
+  onkeydown={(e) => e.target === e.currentTarget && e.key === 'Escape' && handleCancel()}
 >
   <div class="bg-base-100 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh]">
 
