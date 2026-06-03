@@ -4,6 +4,8 @@
   import { COMPETENCIES } from '../lib/competencies';
   import StarEditor from '../lib/components/StarEditor.svelte';
   import type { StoryQuality } from '../lib/types';
+  import { storyToMarkdown, slugifyTitle, downloadMarkdown } from '../lib/markdown';
+  import type { Story } from '../lib/types';
 
   const storyId = sessionStorage.getItem('starlog_active_story') ?? '';
   const original = $storiesStore.find(s => s.id === storyId);
@@ -23,6 +25,43 @@
   let showTagPicker     = $state(false);
   let showDeleteConfirm = $state(false);
   let starEditor: { commitPending: () => void } | undefined = $state();
+  let exportOpen        = $state(false);
+  let copyStatus        = $state<'idle' | 'ok' | 'error'>('idle');
+  let copyTimer: ReturnType<typeof setTimeout>;
+
+  function currentStorySnapshot(): Story {
+    starEditor?.commitPending();
+    return {
+      id: storyId,
+      title: title.trim() || 'Untitled Story',
+      original_language: original?.original_language ?? '',
+      competency_tags: tags,
+      star: { situation, task, action: actions.filter(a => a.trim()), result },
+      quality: original?.quality ?? DEFAULT_QUALITY,
+      notes: notes,
+      rank,
+      createdAt: original?.createdAt ?? new Date().toISOString(),
+      updatedAt: original?.updatedAt ?? new Date().toISOString(),
+    };
+  }
+
+  async function handleCopy() {
+    exportOpen = false;
+    clearTimeout(copyTimer);
+    try {
+      await navigator.clipboard.writeText(storyToMarkdown(currentStorySnapshot()));
+      copyStatus = 'ok';
+    } catch {
+      copyStatus = 'error';
+    }
+    copyTimer = setTimeout(() => { copyStatus = 'idle'; }, 2000);
+  }
+
+  function handleDownload() {
+    exportOpen = false;
+    const snapshot = currentStorySnapshot();
+    downloadMarkdown(`${slugifyTitle(snapshot.title)}-star.md`, storyToMarkdown(snapshot));
+  }
 
   // ── Title click-to-edit ───────────────────────────────────────────────
   let editingTitle = $state(false);
@@ -53,6 +92,10 @@
   }
 </script>
 
+<div aria-live="polite" aria-atomic="true" class="sr-only">
+  {#if copyStatus === 'ok'}Copied to clipboard{:else if copyStatus === 'error'}Copy failed — try Download .md instead{/if}
+</div>
+
 <div class="p-6 max-w-2xl mx-auto" data-testid="story-detail-view">
 
   <!-- Breadcrumb + actions -->
@@ -62,7 +105,25 @@
       <span>›</span>
       <span class="truncate min-w-0">{title.length > 32 ? title.slice(0, 32) + '…' : title}</span>
     </div>
-    <div class="flex gap-2 shrink-0">
+    <div class="flex gap-2 shrink-0 items-center">
+      <!-- Export dropdown -->
+      <details bind:open={exportOpen} class="relative" data-testid="export-dropdown">
+        <summary class="btn btn-ghost btn-sm list-none cursor-pointer" data-testid="export-btn">
+          {#if copyStatus === 'ok'}Copied ✓{:else if copyStatus === 'error'}Copy failed{:else}Export ▾{/if}
+        </summary>
+        <div class="absolute right-0 top-full mt-1 z-10 bg-base-100 border border-base-300 rounded-lg shadow-lg w-44 py-1">
+          <button
+            class="w-full text-left px-3 py-2 text-sm hover:bg-base-200 transition-colors"
+            onclick={handleCopy}
+            data-testid="export-copy-btn"
+          >Copy to clipboard</button>
+          <button
+            class="w-full text-left px-3 py-2 text-sm hover:bg-base-200 transition-colors"
+            onclick={handleDownload}
+            data-testid="export-download-btn"
+          >Download .md</button>
+        </div>
+      </details>
       <button class="btn btn-error btn-sm btn-outline" onclick={() => showDeleteConfirm = true} data-testid="delete-btn">Delete</button>
       <button class="btn btn-primary btn-sm" onclick={() => { if (editingTitle) commitTitle(); else { starEditor?.commitPending(); save(); navigate('story-bank'); } }} data-testid="save-btn">Save</button>
     </div>
