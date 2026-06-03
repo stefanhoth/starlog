@@ -13,14 +13,7 @@
   const archived = $derived(profile.archivedAt != null);
 </script>
 
-<div
-  class="card bg-base-100 border border-base-300 transition-shadow {archived ? 'opacity-60' : 'hover:shadow-md cursor-pointer'}"
-  onclick={!archived ? onclick : undefined}
-  role={!archived ? 'button' : undefined}
-  tabindex={!archived ? 0 : undefined}
-  onkeydown={!archived ? (e) => e.key === 'Enter' && onclick() : undefined}
-  data-testid="job-profile-card"
->
+{#snippet cardBody()}
   <div class="card-body p-4 gap-2">
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0">
@@ -48,4 +41,24 @@
       </div>
     {/if}
   </div>
-</div>
+{/snippet}
+
+{#if archived}
+  <div
+    class="card bg-base-100 border border-base-300 transition-shadow opacity-60"
+    data-testid="job-profile-card"
+  >
+    {@render cardBody()}
+  </div>
+{:else}
+  <div
+    class="card bg-base-100 border border-base-300 transition-shadow hover:shadow-md cursor-pointer"
+    role="button"
+    tabindex="0"
+    onclick={onclick}
+    onkeydown={(e) => e.key === 'Enter' && onclick()}
+    data-testid="job-profile-card"
+  >
+    {@render cardBody()}
+  </div>
+{/if}
