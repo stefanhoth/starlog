@@ -5,6 +5,7 @@
   import { untrack } from 'svelte';
   import { verifyApiKey, extractCompetencies, GeminiError } from '../lib/gemini';
   import { GEMINI_MODELS, type GeminiModel } from '../lib/types';
+  import { parseBackup, applyImport, type BackupBundle } from '../lib/backup';
   import AiWorking from '../lib/components/AiWorking.svelte';
   import Brand from '../lib/components/Brand.svelte';
   import WhatsNewPanel from '../lib/components/WhatsNewPanel.svelte';
@@ -83,6 +84,43 @@
 
   function saveModelSelection() {
     settingsStore.update(s => ({ ...s, geminiModel: selectedModel }));
+  }
+
+  // ── Backup import (onboarding key step only) ───────────────────────
+  let importBundle = $state<BackupBundle | null>(null);
+  let importError = $state('');
+  let importPending = $state(false);
+  let restoreNote = $state('');
+
+  async function handleImportFile(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    importError = '';
+    importBundle = null;
+    importPending = false;
+    try {
+      importBundle = await parseBackup(file);
+      importPending = true;
+    } catch (err) {
+      importError = err instanceof Error ? err.message : 'Could not read file.';
+    }
+    (e.target as HTMLInputElement).value = '';
+  }
+
+  function confirmRestore() {
+    if (!importBundle) return;
+    const storyCount = importBundle.stories.length;
+    const jobCount = importBundle.jobProfiles.length;
+    applyImport(importBundle);
+    restoreNote = `Restored ${storyCount} ${storyCount === 1 ? 'story' : 'stories'} and ${jobCount} job ${jobCount === 1 ? 'profile' : 'profiles'}. One last thing — reconnect your Gemini key to finish.`;
+    importBundle = null;
+    importPending = false;
+  }
+
+  function cancelRestore() {
+    importBundle = null;
+    importPending = false;
+    importError = '';
   }
 
   // ── Step 2: Job entry ──────────────────────────────────────────────
@@ -376,6 +414,45 @@
           >
             Get Started →
           </button>
+
+          {#if restoreNote}
+            <div class="alert alert-success text-sm py-3" data-testid="restore-note">
+              <span>✓ {restoreNote}</span>
+            </div>
+          {/if}
+
+          {#if importError}
+            <p class="text-error text-xs mt-1" data-testid="onboarding-import-error">{importError}</p>
+          {/if}
+
+          {#if importPending && importBundle}
+            <div class="bg-base-100 border border-base-300 rounded-xl p-4 flex flex-col gap-3" data-testid="onboarding-import-confirm">
+              <p class="text-sm text-base-content">
+                This backup contains <strong>{importBundle.stories.length} {importBundle.stories.length === 1 ? 'story' : 'stories'}</strong>
+                and <strong>{importBundle.jobProfiles.length} job {importBundle.jobProfiles.length === 1 ? 'profile' : 'profiles'}</strong>,
+                exported on {new Date(importBundle.exportedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}.
+              </p>
+              <div class="flex gap-2">
+                <button class="btn btn-sm btn-primary" onclick={confirmRestore} data-testid="onboarding-import-confirm-btn">Restore data</button>
+                <button class="btn btn-ghost btn-sm" onclick={cancelRestore} data-testid="onboarding-import-cancel-btn">Cancel</button>
+              </div>
+            </div>
+          {/if}
+
+          {#if !importPending && !restoreNote}
+            <div class="flex justify-center pt-1">
+              <label class="btn btn-ghost btn-sm text-base-content/50 cursor-pointer" data-testid="onboarding-import-label">
+                Already have a backup? Restore it →
+                <input
+                  type="file"
+                  accept=".json,.starlog.json"
+                  class="hidden"
+                  onchange={handleImportFile}
+                  data-testid="onboarding-import-input"
+                />
+              </label>
+            </div>
+          {/if}
         </div>
 
         <!-- Changelog teaser — desktop only, new-user landing only -->
