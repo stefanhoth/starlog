@@ -1,4 +1,4 @@
-# Starlog — Claude Instructions
+# STARlog — Claude Instructions
 
 ## Running E2E Tests
 

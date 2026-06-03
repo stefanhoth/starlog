@@ -6,7 +6,7 @@ STARlog is a **browser-local STAR story library for job interviews**. The missio
 
 A user tells STARlog about things that happened in their career — by speaking, uploading audio, or pasting a rough description. Gemini turns each into a polished STAR story (Situation, Task, Action, Result). Stories live entirely in the browser. The user pastes a job description, Gemini extracts the behavioural competencies that role will test, and the user maps stories to competencies to see coverage and gaps at a glance. Then they rehearse in a dedicated Interview Mode.
 
-- **Core promise:** "Walk into every interview with the right story." (Onboarding hero, `Onboarding.svelte`.)
+- **Core promise:** "Your experience, shaped into powerful stories." (Tagline + Onboarding hero H1, `Onboarding.svelte`, followed by the 📝 Log → ⭐ Structure → 🎯 Nail three-step flow.)
 - **Target user:** an individual job seeker preparing for behavioural interviews — skewing toward experienced / leadership roles, evidenced by the competency vocabulary (`Leadership`, `Manager of Managers`, `Stakeholder Management`, `Hiring`) in `src/lib/competencies.ts`.
 - **Tagline:** "Your experience, shaped into powerful stories." (used in the page title, OG/Twitter titles, and the PWA manifest description.)
 - **Meta description:** "Log your experiences. Structure each STAR story. Nail your next interview." (used for the meta/OG/Twitter descriptions, where the title already carries the tagline.)
