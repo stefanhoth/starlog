@@ -218,7 +218,7 @@
     <div class="flex items-center justify-between px-8 py-4 border-b border-base-300">
       <div class="flex items-center gap-2">
         <span class="text-primary font-bold text-lg">★</span>
-        <span class="font-bold text-sm">StarLog · Rehearse</span>
+        <span class="font-bold text-sm">STARlog · Rehearse</span>
       </div>
       <button class="btn btn-ghost btn-sm" onclick={exit} data-testid="exit-btn">✕ Exit</button>
     </div>
@@ -297,7 +297,7 @@
     <div class="flex items-center justify-between mb-6 text-sm text-neutral-content/60">
       <div class="flex items-center gap-2">
         <span class="text-primary text-xs">★</span>
-        <span>StarLog · Flash cards</span>
+        <span>STARlog · Flash cards</span>
       </div>
       <div class="flex items-center gap-4">
         {#if currentGroup?.competency}
@@ -394,7 +394,7 @@
     <div class="flex items-center justify-between mb-6 text-sm text-neutral-content/60">
       <div class="flex items-center gap-2">
         <span class="text-primary text-xs">★</span>
-        <span>StarLog · Mock Interview</span>
+        <span>STARlog · Mock Interview</span>
       </div>
       <div class="flex items-center gap-4">
         <span>{currentPosition} / {totalStories}</span>
@@ -464,7 +464,7 @@
     <div class="flex items-center justify-between mb-6 text-sm text-neutral-content/60">
       <div class="flex items-center gap-2">
         <span class="text-primary text-xs">★</span>
-        <span>StarLog · Drill with timer</span>
+        <span>STARlog · Drill with timer</span>
       </div>
       <div class="flex items-center gap-4">
         <span>{currentPosition} / {totalStories}</span>

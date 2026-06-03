@@ -1,4 +1,4 @@
-# StarLog — Design Decisions
+# STARlog — Design Decisions
 
 Constraints that shape future work. Grounded in current code.
 
@@ -15,7 +15,7 @@ Constraints that shape future work. Grounded in current code.
 
 ## AI integration
 
-- **Google Gemini via `@google/generative-ai`, client-side only** (`gemini.ts`). Calls go browser → Google with the user's key; StarLog never proxies them.
+- **Google Gemini via `@google/generative-ai`, client-side only** (`gemini.ts`). Calls go browser → Google with the user's key; STARlog never proxies them.
 - **Model selection** (`GEMINI_MODELS` in `types.ts`): default `gemini-3.5-flash`; user-selectable. `verifyApiKey` hardcodes `gemini-2.5-flash` for the validation ping. *Constraint:* the model list is a typed union — adding/removing models touches `types.ts` and the Settings select.
 - **Structured output via JSON.** STAR extraction uses `responseMimeType: 'application/json'`, `temperature: 0.2`; inspiration questions use creative mode (`temperature: 0.8`, no JSON mime). Parsing strips markdown fences (`parseJson`) and validates shape (`assertStoryDraft`, competency array/`{competencies}` wrapper). *Constraint:* prompts are the contract — the STAR prompt fixes the JSON schema, the competency vocabulary (12-term list), and rules (English output, no invented action steps, 5–7 competencies). Changing the schema means updating both prompt and validators.
 - **Input safety / limits:** JD truncated to 12k chars; inspiration competency sanitized (stripped backticks/quotes, 100-char cap); audio base64-encoded in 8k chunks; MIME falls back to `audio/webm`.

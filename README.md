@@ -1,10 +1,10 @@
-# StarLog
+# STARlog
 
 [![CI](https://github.com/stefanhoth/starlog/actions/workflows/ci.yml/badge.svg)](https://github.com/stefanhoth/starlog/actions/workflows/ci.yml)
 
 **Your browser-local STAR story library for job interviews.**
 
-StarLog helps you capture, structure, and rehearse past-experience stories using the STAR format (Situation, Task, Action, Result). Speak or paste a rough description of what happened — Gemini AI turns it into a polished, interview-ready story. Map your stories to specific job postings, see coverage at a glance, and walk into any interview with the right story ready to go.
+STARlog helps you capture, structure, and rehearse past-experience stories using the STAR format (Situation, Task, Action, Result). Speak or paste a rough description of what happened — Gemini AI turns it into a polished, interview-ready story. Map your stories to specific job postings, see coverage at a glance, and walk into any interview with the right story ready to go.
 
 Everything stays in your browser. No account, no server, no data leaving your machine — except the Gemini API calls made with your own key.
 

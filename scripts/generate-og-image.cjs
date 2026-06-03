@@ -1,5 +1,5 @@
 /**
- * OG image generator for StarLog.
+ * OG image generator for STARlog.
  *
  * Renders the share images at three aspect ratios using Playwright/Chromium:
  *   public/og-image.png         1200×630   — primary (Facebook, LinkedIn, generic)
@@ -58,7 +58,7 @@ const FORMATS = {
 /** Render the brand wordmark — "STAR" white, "log" in brand purple. */
 function brandHtml() {
   return `<div class="brand">
-      <img src="${logoSrc}" alt="StarLog" />
+      <img src="${logoSrc}" alt="STARlog" />
       <div class="brand-name"><span class="mark-star">STAR</span><span class="brand-tail">log</span></div>
     </div>`;
 }

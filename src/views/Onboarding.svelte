@@ -251,7 +251,7 @@
           with the right story.
         </h1>
         <p class="mt-5 text-lg text-base-content/60 leading-relaxed max-w-lg">
-          Tell StarLog your work stories. It maps them to what interviewers actually test, so when the question comes you already have the answer.
+          Tell STARlog your work stories. It maps them to what interviewers actually test, so when the question comes you already have the answer.
         </p>
 
         <!-- STAR primer -->
@@ -305,7 +305,7 @@
               >ⓘ more info</button>
             </div>
             <p class="text-sm text-base-content/50 mt-1 leading-relaxed">
-              StarLog uses your own Gemini API key — your calls go directly to Google, never through StarLog.
+              STARlog uses your own Gemini API key — your calls go directly to Google, never through STARlog.
             </p>
           </div>
 
@@ -404,9 +404,9 @@
         </div>
         <p class="text-base-content/60 leading-relaxed">When you use a shared AI service, your prompts go through someone else's account and billing. With your own Gemini key:</p>
         <ul class="space-y-1.5 text-base-content/70">
-          <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>Your API calls go directly from your browser to Google — StarLog never sees them</span></li>
+          <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>Your API calls go directly from your browser to Google — STARlog never sees them</span></li>
           <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>You control usage and can revoke the key any time from Google AI Studio</span></li>
-          <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>No StarLog account means no StarLog database that could be breached</span></li>
+          <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>No STARlog account means no STARlog database that could be breached</span></li>
         </ul>
         <p class="text-base-content/50 text-xs">The free tier (Gemini Flash) handles hundreds of stories before you'd ever hit a limit.</p>
       </div>
@@ -429,12 +429,12 @@
           <h3 id="privacy-heading" class="font-semibold text-base">Your data never leaves your device</h3>
           <button class="btn btn-xs btn-ghost shrink-0 -mt-1 -mr-1" onclick={() => showPrivacyPopover = false} aria-label="Close">✕</button>
         </div>
-        <p class="text-base-content/60 leading-relaxed">StarLog stores everything — your stories, job profiles, and API key — in your browser's local storage (IndexedDB). This means:</p>
+        <p class="text-base-content/60 leading-relaxed">STARlog stores everything — your stories, job profiles, and API key — in your browser's local storage (IndexedDB). This means:</p>
         <ul class="space-y-1.5 text-base-content/70">
           <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>No account required. No email, no password.</span></li>
-          <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>No server. There is no StarLog backend that receives or stores your data.</span></li>
+          <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>No server. There is no STARlog backend that receives or stores your data.</span></li>
           <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>No sync. If you clear browser storage or switch browsers, your data is gone. Use Export to back it up.</span></li>
-          <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>Your API key is only used to talk directly to Google's Gemini API — it is never sent to StarLog.</span></li>
+          <li class="flex gap-2"><span class="text-primary shrink-0">·</span><span>Your API key is only used to talk directly to Google's Gemini API — it is never sent to STARlog.</span></li>
         </ul>
         <p class="text-base-content/40 text-xs">This is a private, single-device tool. It is not designed for sharing or collaboration.</p>
         <button class="btn btn-sm btn-ghost self-end" onclick={() => showPrivacyPopover = false}>Got it</button>
@@ -455,7 +455,7 @@
     >
       <div class="bg-base-100 border border-base-300 rounded-xl shadow-md p-6 text-sm max-w-xl w-full flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
         <div class="flex items-start justify-between gap-2">
-          <h3 id="how-heading" class="font-semibold text-lg">Two ways to use StarLog</h3>
+          <h3 id="how-heading" class="font-semibold text-lg">Two ways to use STARlog</h3>
           <button class="btn btn-xs btn-ghost shrink-0 -mt-1 -mr-1" onclick={() => showHowItWorks = false} aria-label="Close">✕</button>
         </div>
         <div class="grid md:grid-cols-2 gap-4">
@@ -466,7 +466,7 @@
             </div>
             <ol class="space-y-2 text-base-content/70">
               <li class="flex gap-2"><span class="text-primary font-semibold shrink-0">1.</span><span>Paste the job description → AI extracts 5–7 competencies</span></li>
-              <li class="flex gap-2"><span class="text-primary font-semibold shrink-0">2.</span><span>For each competency with no story, StarLog prompts you to fill the gap</span></li>
+              <li class="flex gap-2"><span class="text-primary font-semibold shrink-0">2.</span><span>For each competency with no story, STARlog prompts you to fill the gap</span></li>
               <li class="flex gap-2"><span class="text-primary font-semibold shrink-0">3.</span><span>Record or type your story → AI structures it into STAR format</span></li>
               <li class="flex gap-2"><span class="text-primary font-semibold shrink-0">4.</span><span>Rehearse in Interview Mode until it flows</span></li>
             </ol>

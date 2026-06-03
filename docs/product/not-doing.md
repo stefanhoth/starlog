@@ -1,4 +1,4 @@
-# StarLog — What We're Not Doing (and Why)
+# STARlog — What We're Not Doing (and Why)
 
 Features and ideas we **deliberately decided against** (or deferred), with the reasoning at the time. Stops good-sounding ideas from being re-litigated, and records what would have to change for the answer to flip. Newest first.
 
