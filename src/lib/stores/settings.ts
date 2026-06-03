@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { Settings } from '../types';
+import { GEMINI_MODELS, type Settings } from '../types';
 import { storageError } from './storageError';
 import { getDB, loadWithFallback, persistToDB } from '../db';
 
@@ -23,7 +23,10 @@ function createSettingsStore() {
 
   async function init(): Promise<void> {
     const stored = await loadWithFallback<Settings | null>(DB_KEY, LS_KEY, null, { removeAfterMigration: true });
-    set(stored ? { ...defaults, ...stored } : { ...defaults });
+    const merged = stored ? { ...defaults, ...stored } : { ...defaults };
+    const validIds = GEMINI_MODELS.map(m => m.id);
+    if (!validIds.includes(merged.geminiModel)) merged.geminiModel = defaults.geminiModel;
+    set(merged);
   }
 
   return {
