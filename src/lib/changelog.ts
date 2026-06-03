@@ -34,8 +34,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: 'May 2026',
     changes: [
       {
-        title: 'Install Starlog as an app',
-        detail: 'You can now add Starlog to your home screen or desktop and launch it like any other app — no browser tab needed. It even works offline.',
+        title: 'Install STARlog as an app',
+        detail: 'You can now add STARlog to your home screen or desktop and launch it like any other app — no browser tab needed. It even works offline.',
       },
       {
         title: 'Export and import your data',
@@ -56,7 +56,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     changes: [
       {
         title: 'App redesigned around your target job',
-        detail: 'Instead of a generic story list, the app now starts with your job description — paste it in, and Starlog maps your stories to what that specific employer is actually looking for.',
+        detail: 'Instead of a generic story list, the app now starts with your job description — paste it in, and STARlog maps your stories to what that specific employer is actually looking for.',
       },
       {
         title: 'Drag to reorder your action steps',

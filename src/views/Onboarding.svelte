@@ -242,21 +242,55 @@
     <div class="flex-1 grid lg:grid-cols-[1fr_400px]">
 
       <!-- Left: pitch -->
-      <div class="flex flex-col justify-center px-8 py-14 lg:px-16 xl:px-24">
-        <div class="mb-10">
-          <Brand size="lg" />
-        </div>
-        <h1 class="text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1]">
-          Walk into every interview<br class="hidden sm:block">
-          with the right story.
-        </h1>
-        <p class="mt-5 text-lg text-base-content/60 leading-relaxed max-w-lg">
-          Tell STARlog your work stories. It maps them to what interviewers actually test, so when the question comes you already have the answer.
-        </p>
+      <div class="flex flex-col px-8 lg:px-16 xl:px-24">
 
-        <!-- STAR primer -->
-        <div class="mt-8 border border-base-300 rounded-xl p-4 bg-base-100 max-w-md">
-          <p class="text-xs font-semibold uppercase tracking-widest text-base-content/40 mb-3">What's STAR?</p>
+        <!-- Hero: tagline + 3-step flow, kept as a single visual unit -->
+        <div class="flex flex-col justify-center py-14 lg:min-h-screen">
+          <div class="mb-10">
+            <Brand size="lg" />
+          </div>
+          <h1 class="text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] max-w-xl">
+            Your experience, shaped into
+            <span class="text-primary">powerful stories.</span>
+          </h1>
+
+          <!-- 3-step process flow (replaces the old subline) -->
+          <div class="mt-10 flex items-start gap-2 max-w-xl">
+            {#each [
+              { e: '📝', l: 'Log your experiences' },
+              { e: '⭐', l: 'Structure each story' },
+              { e: '🎯', l: 'Nail your next interview' },
+            ] as step, i}
+              <div class="flex-1 flex flex-col items-center text-center gap-2">
+                <div class="text-4xl leading-none">{step.e}</div>
+                <div class="text-sm font-semibold leading-snug">{step.l}</div>
+              </div>
+              {#if i < 2}
+                <div class="self-start pt-3 text-2xl text-base-content/25" aria-hidden="true">→</div>
+              {/if}
+            {/each}
+          </div>
+
+          <div class="mt-10 flex flex-wrap items-center gap-4">
+            <button
+              class="text-xs text-base-content/40 hover:text-base-content/70 transition-colors text-left"
+              onclick={() => showPrivacyPopover = true}
+            >
+              🔒 Your data stays in your browser — what does that mean?
+            </button>
+            <button
+              class="text-xs text-primary/70 hover:text-primary transition-colors"
+              onclick={() => showHowItWorks = true}
+            >
+              How it works →
+            </button>
+          </div>
+        </div>
+
+        <!-- Below the fold: STAR explainer (opt-in "how does this work?") -->
+        <div class="pb-14 lg:pb-20 max-w-md">
+          <h2 class="text-lg font-semibold">What is a STAR story?</h2>
+          <p class="text-sm text-base-content/50 mt-1 mb-4">A simple structure that turns any experience into a clear, compelling answer.</p>
           <div class="grid grid-cols-4 gap-3">
             {#each [
               { l: 'S', w: 'Situation', d: 'set the scene' },
@@ -273,21 +307,6 @@
               </div>
             {/each}
           </div>
-        </div>
-
-        <div class="mt-8 flex flex-wrap items-center gap-4">
-          <button
-            class="text-xs text-base-content/40 hover:text-base-content/70 transition-colors text-left"
-            onclick={() => showPrivacyPopover = true}
-          >
-            🔒 Your data stays in your browser — what does that mean?
-          </button>
-          <button
-            class="text-xs text-primary/70 hover:text-primary transition-colors"
-            onclick={() => showHowItWorks = true}
-          >
-            How it works →
-          </button>
         </div>
 
       </div>
