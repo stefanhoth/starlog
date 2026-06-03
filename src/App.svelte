@@ -4,6 +4,8 @@
   import { jobProfilesStore } from './lib/stores/jobProfiles';
   import { storageError } from './lib/stores/storageError';
   import { storageNotPersisted } from './lib/stores/storageWarning';
+  import { storiesStore } from './lib/stores/stories';
+  import { exportData } from './lib/backup';
   import type { JobProfile } from './lib/types';
   import Onboarding from './views/Onboarding.svelte';
   import Brand from './lib/components/Brand.svelte';
@@ -67,6 +69,37 @@
 
   let showWhatsNew = $state(false);
   let sidebarArchivedOpen = $state(false);
+
+  const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+  let backupReminderDismissed = $state(
+    typeof localStorage !== 'undefined'
+      ? localStorage.getItem('starlog_backup_reminder_dismissed') !== null
+      : true
+  );
+
+  const showBackupReminder = $derived(
+    $settingsStore.consentGiven &&
+    !backupReminderDismissed &&
+    $storiesStore.length > 0 &&
+    (() => {
+      const oldest = [...$storiesStore].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      )[0];
+      return Date.now() - new Date(oldest.createdAt).getTime() >= THREE_DAYS_MS;
+    })()
+  );
+
+  function dismissBackupReminder() {
+    localStorage.setItem('starlog_backup_reminder_dismissed', '1');
+    backupReminderDismissed = true;
+  }
+
+  function handleBackupDownload() {
+    exportData();
+    dismissBackupReminder();
+  }
+
   const hasUnseen = $derived($lastSeenDate !== CHANGELOG[0]?.date);
 
   onMount(() => {
@@ -85,6 +118,16 @@
   <div role="alert" class="fixed top-0 left-0 right-0 z-49 flex items-center justify-between gap-3 bg-warning text-warning-content px-4 py-3 text-sm shadow-lg">
     <span>⚠️ Your data is not protected against browser cleanup. <a href="https://support.google.com/chrome/answer/9658361" target="_blank" rel="noreferrer" class="underline font-medium">Install STARlog as an app</a> to prevent data loss.</span>
     <button class="btn btn-xs btn-ghost text-warning-content" onclick={() => storageNotPersisted.set(false)}>Dismiss</button>
+  </div>
+{/if}
+
+{#if showBackupReminder}
+  <div role="alert" data-testid="backup-reminder-banner" class="fixed top-0 left-0 right-0 z-48 flex items-center justify-between gap-3 bg-info text-info-content px-4 py-3 text-sm shadow-lg">
+    <span>💾 You've been using StarLog for a few days — time to download a backup so your stories are safe.</span>
+    <div class="flex items-center gap-2 shrink-0">
+      <button class="btn btn-xs btn-info-content border border-info-content/30 hover:bg-info-content/10" onclick={handleBackupDownload} data-testid="backup-reminder-download">Download backup →</button>
+      <button class="btn btn-xs btn-ghost text-info-content" onclick={dismissBackupReminder} data-testid="backup-reminder-dismiss">Dismiss</button>
+    </div>
   </div>
 {/if}
 
