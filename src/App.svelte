@@ -298,7 +298,7 @@
           onclick={() => navigate('story-bank')}
           data-testid="nav-story-bank"
         >
-          📚 Story bank
+          <span class="w-5 shrink-0 text-center">📚</span>Story bank
         </button>
 
         <button
@@ -307,7 +307,7 @@
           onclick={startRehearse}
           data-testid="nav-rehearse"
         >
-          🎤 Rehearse
+          <span class="w-5 shrink-0 text-center">🎤</span>Rehearse
         </button>
 
       </nav>
@@ -321,21 +321,21 @@
           onclick={() => navigate('data')}
           data-testid="nav-data"
         >
-          🗄 Data
+          <span class="w-5 shrink-0 text-center">🗄</span>Data
         </button>
         <button
           class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm text-base-content/50 hover:text-base-content hover:bg-base-200 transition-colors"
           onclick={() => navigate('onboarding')}
           data-testid="settings-cog"
         >
-          ⚙ Settings
+          <span class="w-5 shrink-0 text-center">⚙️</span>Settings
         </button>
         <button
           data-testid="whats-new-btn"
           class="relative w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm text-base-content/50 hover:text-base-content hover:bg-base-200 transition-colors"
           onclick={() => showWhatsNew = true}
         >
-          ✨ What's New
+          <span class="w-5 shrink-0 text-center">✨</span>What's New
           {#if hasUnseen}
             <span data-testid="whats-new-badge" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary"></span>
           {/if}
