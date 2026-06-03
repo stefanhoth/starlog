@@ -22,4 +22,4 @@
     <ChangelogList entries={CHANGELOG} initialVisible={3} />
   </div>
 </div>
-<div class="fixed inset-0 z-40 bg-black/20" onclick={onClose}></div>
+<button class="fixed inset-0 z-40 bg-black/20 cursor-default" aria-label="Close panel" onclick={onClose}></button>
