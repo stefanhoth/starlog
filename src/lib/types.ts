@@ -52,6 +52,7 @@ export interface Settings {
   apiKey: string;
   consentGiven: boolean;
   geminiModel: GeminiModel;
+  localLlmEnabled: boolean;
 }
 
 // Gemini response shape before we attach id/timestamps

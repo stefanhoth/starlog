@@ -33,6 +33,7 @@
   // ── Step 1: API key & model selection ─────────────────────────────
   let apiKey = $state($settingsStore.apiKey ?? '');
   let selectedModel = $state<GeminiModel>($settingsStore.geminiModel ?? 'gemini-2.5-flash');
+  let localLlmEnabled = $state($settingsStore.localLlmEnabled ?? false);
   let verifying = $state(false);
   let verifyStatus = $state<'idle' | 'ok' | 'error'>('idle');
   let verifyError = $state('');
@@ -84,6 +85,11 @@
 
   function saveModelSelection() {
     settingsStore.update(s => ({ ...s, geminiModel: selectedModel }));
+  }
+
+  function toggleLocalLlm() {
+    localLlmEnabled = !localLlmEnabled;
+    settingsStore.update(s => ({ ...s, localLlmEnabled }));
   }
 
   // ── Backup import (onboarding key step only) ───────────────────────
@@ -243,6 +249,20 @@
             <option value={m.id}>{m.label}</option>
           {/each}
         </select>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 py-1">
+        <div>
+          <p class="text-sm font-medium">Local LLM <span class="badge badge-warning badge-xs align-middle ml-1">Experimental</span></p>
+          <p class="text-xs text-base-content/50 mt-0.5">Run AI locally in the browser via WebGPU — no API key needed. Requires a compatible GPU.</p>
+        </div>
+        <input
+          type="checkbox"
+          class="toggle toggle-sm"
+          checked={localLlmEnabled}
+          onclick={toggleLocalLlm}
+          data-testid="local-llm-toggle"
+        />
       </div>
 
       <div class="flex flex-col gap-2">
