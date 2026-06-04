@@ -75,7 +75,7 @@
 
   async function submitKey() {
     if (!canSave) return;
-    await settingsStore.set({ apiKey: apiKey.trim(), consentGiven: true, geminiModel: selectedModel });
+    await settingsStore.set({ apiKey: apiKey.trim(), consentGiven: true, geminiModel: selectedModel, localLlmEnabled });
     if ($jobProfilesStore.length === 0) {
       navigate('add-job');
     } else {
