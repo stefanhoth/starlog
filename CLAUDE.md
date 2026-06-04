@@ -38,6 +38,10 @@ For every ticket, follow this sequence exactly:
 
 **Never stop after step 3 and ask "should I open a PR?"** — assume yes, always.
 
+## MCP Tool Parameters
+
+Never wrap MCP tool parameter values in shell heredoc syntax (`$(cat <<'EOF'...EOF)`). That syntax is only meaningful in a shell — passed as a JSON parameter value it appears literally in the output (PR body, issue body, etc.). Always pass text directly as the parameter string.
+
 ## What's New Changelog
 
 When opening a new PR or creating a GitHub issue for a user-facing change, check whether the What's New changelog (`src/lib/changelog.ts`) should be updated. If the change introduces a new feature, a notable improvement, or a fix that users would care about, ask the user if they want to add an entry before finalising the PR.
