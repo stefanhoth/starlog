@@ -13,6 +13,10 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: 'June 2026',
     changes: [
       {
+        title: 'Export your whole story library as Markdown',
+        detail: 'Download all your stories as a single readable Markdown file from the Data screen — great for sharing with a mentor, pasting into an LLM for mock-interview practice, or archiving outside the app.',
+      },
+      {
         title: 'Your data survives app crashes',
         detail: 'No more losing everything after the app closes unexpectedly — stories and job profiles are now stored in a crash-resistant format that the OS can\'t silently wipe.',
       },
