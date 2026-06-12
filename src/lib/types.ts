@@ -48,10 +48,21 @@ export const GEMINI_MODELS: { id: GeminiModel; label: string }[] = [
   { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview' },
 ];
 
+export type AiProvider = 'cloud' | 'local';
+
+export type LocalLlmState = 'ready' | 'needs-flag' | 'unsupported';
+
+export interface LocalModelCapabilities {
+  supportsAudio: boolean;
+  maxContextTokens: number;
+  streamingSupported: boolean;
+}
+
 export interface Settings {
   apiKey: string;
   consentGiven: boolean;
   geminiModel: GeminiModel;
+  aiProvider: AiProvider;
 }
 
 // Gemini response shape before we attach id/timestamps
