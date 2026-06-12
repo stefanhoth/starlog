@@ -339,7 +339,9 @@ test.describe('bulk export', () => {
     await openDataWithStories(page, [makeBulkStory({ title: 'Alpha', rank: 1 })]);
     await page.getByTestId('bulk-export-btn').click();
     await expect(page.getByTestId('bulk-export-download-btn')).toBeVisible();
-    await page.keyboard.press('Escape');
+    // Use locator.press() to ensure focus is explicitly on the summary before firing
+    // Escape — page.keyboard.press() targets ambient focus which differs across browsers.
+    await page.getByTestId('bulk-export-btn').press('Escape');
     await expect(page.getByTestId('bulk-export-download-btn')).not.toBeVisible();
   });
 });
