@@ -9,7 +9,7 @@ import type { LocalLlmState } from './types';
  * 'unsupported' — WebGPU absent; local mode not possible in this browser.
  */
 export function canUseLocalLlm(): LocalLlmState {
-  const webGpuAvailable = typeof navigator !== 'undefined' && 'gpu' in navigator;
+  const webGpuAvailable = typeof navigator !== 'undefined' && navigator.gpu != null;
   const jspiAvailable =
     typeof WebAssembly !== 'undefined' &&
     typeof (WebAssembly as Record<string, unknown>).Suspending === 'function';

@@ -22,6 +22,9 @@
   let modelFile = $state<File | null>(null);
   let abortController = $state<AbortController | null>(null);
   let useFile = $state(false);
+  let reducedMotion = $state(
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
 
   function recheck() {
     localLlmState = canUseLocalLlm();
@@ -160,10 +163,16 @@
   {:else if modelStatus === 'initialising'}
     <div class="flex flex-col gap-2" aria-live="polite" aria-label="Initialising model">
       <div class="flex items-center gap-2 text-xs text-base-content/60">
-        <span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
+        {#if !reducedMotion}
+          <span class="loading loading-spinner loading-xs" aria-hidden="true" data-testid="local-spinner"></span>
+        {/if}
         <span>Initialising model — this takes 30–90 s…</span>
       </div>
-      <progress class="progress progress-primary w-full" aria-label="Initialising"></progress>
+      {#if reducedMotion}
+        <p class="text-xs text-base-content/40" data-testid="local-static-progress">Please wait…</p>
+      {:else}
+        <progress class="progress progress-primary w-full" aria-label="Initialising"></progress>
+      {/if}
     </div>
 
   {:else}
