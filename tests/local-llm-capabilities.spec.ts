@@ -98,6 +98,29 @@ test.describe('LocalModelLoader capability states', () => {
     await expect(page.getByLabel('Local AI needs flag')).not.toBeVisible();
   });
 
+  test('unsupported (safari-like): WebGPU present but JSPI absent on non-Chromium browser', async ({ page }) => {
+    await page.addInitScript(() => {
+      // Simulate Safari: has WebGPU, no JSPI, userAgentData absent (Chromium-only API)
+      if (!('gpu' in navigator)) {
+        Object.defineProperty(navigator, 'gpu', { value: {}, configurable: true });
+      }
+      delete (window.WebAssembly as Record<string, unknown>).Suspending;
+      // Can't delete non-configurable properties, so override the value to null instead
+      Object.defineProperty(navigator, 'userAgentData', { get: () => null, configurable: true });
+    });
+
+    await page.goto('/');
+    await clearStorage(page);
+    await seedSettings(page);
+    await page.reload();
+
+    await openLocalTab(page);
+
+    // Must show unsupported, NOT needs-flag (chrome flags don't apply to Safari)
+    await expect(page.getByLabel('Local AI unavailable')).toBeVisible();
+    await expect(page.getByLabel('Local AI needs flag')).not.toBeVisible();
+  });
+
   test('recheck: injecting JSPI after load updates state without page reload', async ({ page }) => {
     await page.addInitScript(() => {
       if (!('gpu' in navigator)) {
