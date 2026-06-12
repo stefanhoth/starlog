@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/stefanhoth/starlog/actions/workflows/ci.yml/badge.svg)](https://github.com/stefanhoth/starlog/actions/workflows/ci.yml)
 
-**Your experience, shaped into powerful stories.**
+![STARlog - Your experience, shaped into powerful stories.](public/og-image.png)
 
 STARlog helps you capture, structure, and rehearse past-experience stories using the STAR format (Situation, Task, Action, Result). Speak or paste a rough description of what happened — Gemini AI turns it into a polished, interview-ready story. Map your stories to specific job postings, see coverage at a glance, and walk into any interview with the right story ready to go.
 
