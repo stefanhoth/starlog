@@ -6,7 +6,7 @@ import { getDB, loadWithFallback, persistToDB } from '../db';
 const DB_KEY = 'settings';
 const LS_KEY = 'starlog_settings';
 
-export const defaults: Settings = { apiKey: '', consentGiven: false, geminiModel: 'gemini-3.5-flash' };
+export const defaults: Settings = { apiKey: '', consentGiven: false, geminiModel: 'gemini-3.5-flash', aiProvider: 'cloud' };
 
 async function persist(value: Settings): Promise<void> {
   try {
