@@ -16,6 +16,7 @@
   import StoryBank from './views/StoryBank.svelte';
   import InterviewMode from './views/InterviewMode.svelte';
   import Data from './views/Data.svelte';
+  import LocalLlmTest from './views/LocalLlmTest.svelte';
   import WhatsNewPanel from './lib/components/WhatsNewPanel.svelte';
   import { lastSeenDate, initWhatsNew } from './lib/stores/whatsNew';
   import { CHANGELOG } from './lib/changelog';
@@ -192,7 +193,10 @@
   </div>
 {/if}
 
-{#if isFullScreen}
+{#if $currentView === 'local-llm-test'}
+  <LocalLlmTest />
+
+{:else if isFullScreen}
   {#if $currentView === 'interview'}
     <InterviewMode />
   {:else}

@@ -10,7 +10,8 @@ export type View =
   | 'review'
   | 'story-detail'
   | 'interview'
-  | 'data';
+  | 'data'
+  | 'local-llm-test';
 
 export const currentView = writable<View>('onboarding');
 export const activeProfileId = writable<string>('');
@@ -32,6 +33,7 @@ function parseHash(hash: string): RouteState {
   if (path === 'interview') return { view: 'interview' };
   if (path === 'data') return { view: 'data' };
   if (path === 'stories') return { view: 'story-bank' };
+  if (path === 'local-llm-test') return { view: 'local-llm-test' };
 
   const gapsMatch = path.match(/^job\/([^/]+)\/gaps$/);
   if (gapsMatch) return { view: 'gap-fill', profileId: gapsMatch[1] };
@@ -57,6 +59,7 @@ function viewToHash(view: View, profileId?: string, storyId?: string): string {
     case 'story-detail':      return storyId ? `#/stories/${storyId}` : '#/stories';
     case 'interview':         return '#/interview';
     case 'data':              return '#/data';
+    case 'local-llm-test':   return '#/local-llm-test';
     default:                  return '#/';
   }
 }
