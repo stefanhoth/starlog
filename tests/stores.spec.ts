@@ -22,6 +22,7 @@ test('stories persist in IndexedDB across page reload', async ({ page }) => {
   });
 
   await page.reload();
+  await page.waitForSelector('[data-testid="app-shell"], [data-testid="api-key-input"]');
 
   const stories = await readDB(page, 'stories', []);
 
@@ -49,6 +50,7 @@ test('job profiles persist in IndexedDB across page reload', async ({ page }) =>
   });
 
   await page.reload();
+  await page.waitForSelector('[data-testid="app-shell"], [data-testid="api-key-input"]');
 
   const profiles = await readDB(page, 'jobProfiles', []);
 
