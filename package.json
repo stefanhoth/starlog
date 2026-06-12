@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@litert-lm/core": "^0.13.1",
     "daisyui": "^4.12.24",
     "idb": "^8.0.3"
   }

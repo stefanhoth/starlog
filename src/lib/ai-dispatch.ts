@@ -10,31 +10,31 @@ export { GeminiError } from './gemini-utils';
  * Audio (Blob) input always routes to cloud — local models have no browser audio pipeline.
  */
 export async function dispatchExtractSTAR(input: Blob | string): Promise<StoryDraft> {
-  if (input instanceof Blob || get(settingsStore).aiProvider === 'cloud') {
+  if (input instanceof Blob || get(settingsStore).aiProvider !== 'local') {
     return cloud.extractSTAR(input);
   }
-  // M2: return local.extractSTAR(input as string);
-  return cloud.extractSTAR(input);
+  const { extractSTAR } = await import('./local');
+  return extractSTAR(input);
 }
 
 /**
  * Routes competency extraction to the active AI provider.
  */
 export async function dispatchExtractCompetencies(jobDescription: string): Promise<string[]> {
-  if (get(settingsStore).aiProvider === 'cloud') {
+  if (get(settingsStore).aiProvider !== 'local') {
     return cloud.extractCompetencies(jobDescription);
   }
-  // M2: return local.extractCompetencies(jobDescription);
-  return cloud.extractCompetencies(jobDescription);
+  const { extractCompetencies } = await import('./local');
+  return extractCompetencies(jobDescription);
 }
 
 /**
  * Routes inspiration question generation to the active AI provider.
  */
 export async function dispatchGenerateInspirationQuestions(competency: string): Promise<string[]> {
-  if (get(settingsStore).aiProvider === 'cloud') {
+  if (get(settingsStore).aiProvider !== 'local') {
     return cloud.generateInspirationQuestions(competency);
   }
-  // M2: return local.generateInspirationQuestions(competency);
-  return cloud.generateInspirationQuestions(competency);
+  const { generateInspirationQuestions } = await import('./local');
+  return generateInspirationQuestions(competency);
 }
