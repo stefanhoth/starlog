@@ -4,11 +4,13 @@
   import { navigate, openJob } from '../lib/stores/view';
   import { untrack } from 'svelte';
   import { verifyApiKey, extractCompetencies, GeminiError } from '../lib/gemini';
-  import { GEMINI_MODELS, type GeminiModel } from '../lib/types';
+  import { GEMINI_MODELS, type GeminiModel, type AiProvider } from '../lib/types';
   import { parseBackup, applyImport, type BackupBundle } from '../lib/backup';
+  import { isEngineReady } from '../lib/local';
   import AiWorking from '../lib/components/AiWorking.svelte';
   import Brand from '../lib/components/Brand.svelte';
   import WhatsNewPanel from '../lib/components/WhatsNewPanel.svelte';
+  import LocalModelLoader from '../lib/components/LocalModelLoader.svelte';
   import { CHANGELOG } from '../lib/changelog';
 
   const recentChanges = CHANGELOG.flatMap(e => e.changes).slice(0, 3);
@@ -33,12 +35,16 @@
   // ── Step 1: API key & model selection ─────────────────────────────
   let apiKey = $state($settingsStore.apiKey ?? '');
   let selectedModel = $state<GeminiModel>($settingsStore.geminiModel ?? 'gemini-2.5-flash');
+  let selectedProvider = $state<AiProvider>($settingsStore.aiProvider ?? 'cloud');
   let verifying = $state(false);
   let verifyStatus = $state<'idle' | 'ok' | 'error'>('idle');
   let verifyError = $state('');
   let formatError = $state('');
+  let localModelReady = $state(isEngineReady());
 
-  const canSave = $derived(verifyStatus === 'ok');
+  const canSave = $derived(
+    selectedProvider === 'local' ? localModelReady : verifyStatus === 'ok'
+  );
 
   let validationSeq = 0;
   $effect(() => {
@@ -74,8 +80,13 @@
 
   async function submitKey() {
     if (!canSave) return;
-    await settingsStore.set({ apiKey: apiKey.trim(), consentGiven: true, geminiModel: selectedModel, aiProvider: $settingsStore.aiProvider ?? 'cloud' });
-    if ($jobProfilesStore.length === 0) {
+    await settingsStore.set({
+      apiKey: selectedProvider === 'cloud' ? apiKey.trim() : $settingsStore.apiKey,
+      consentGiven: true,
+      geminiModel: selectedModel,
+      aiProvider: selectedProvider,
+    });
+    if ($jobProfilesStore.length === 0 && selectedProvider === 'cloud') {
       navigate('add-job');
     } else {
       navigate('job-hub');
@@ -193,57 +204,84 @@
     <div class="bg-base-100 border border-base-300 rounded-2xl shadow-sm w-full max-w-sm p-6 flex flex-col gap-5">
       <div>
         <h2 class="font-semibold text-base">Settings</h2>
-        <p class="text-sm text-base-content/50 mt-0.5">Update your Gemini API key</p>
+        <p class="text-sm text-base-content/50 mt-0.5">Configure your AI provider</p>
       </div>
 
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium" for="api-key">Gemini API Key</label>
-        <div class="relative">
-          <input
-            id="api-key"
-            type="password"
-            class="input input-bordered w-full pr-10 text-sm
-              {formatError ? 'input-error' : verifyStatus === 'ok' ? 'input-success' : verifyStatus === 'error' ? 'input-error' : ''}"
-            placeholder="AIza…"
-            bind:value={apiKey}
-            onkeydown={(e) => e.key === 'Enter' && submitKey()}
-            data-testid="api-key-input"
-          />
-          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none">
-            {#if verifying}
-              <span class="loading loading-spinner loading-xs text-base-content/40"></span>
-            {:else if verifyStatus === 'ok'}
-              <span class="text-success font-bold">✓</span>
-            {:else if verifyStatus === 'error' || formatError}
-              <span class="text-error">✕</span>
-            {/if}
-          </span>
+      <!-- AI provider toggle -->
+      <div class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium">AI Provider</span>
+        <div role="tablist" class="tabs tabs-boxed tabs-sm" data-testid="provider-toggle">
+          <button
+            role="tab"
+            class="tab {selectedProvider === 'cloud' ? 'tab-active' : ''}"
+            onclick={() => selectedProvider = 'cloud'}
+            aria-selected={selectedProvider === 'cloud'}
+            data-testid="provider-cloud"
+          >Cloud (Gemini)</button>
+          <button
+            role="tab"
+            class="tab {selectedProvider === 'local' ? 'tab-active' : ''}"
+            onclick={() => selectedProvider = 'local'}
+            aria-selected={selectedProvider === 'local'}
+            data-testid="provider-local"
+          >Local</button>
         </div>
-        {#if formatError}
-          <p class="text-error text-xs mt-0.5" data-testid="key-format-error">{formatError}</p>
-        {:else if verifyStatus === 'error'}
-          <p class="text-error text-xs mt-0.5" data-testid="verify-error">{verifyError}</p>
-        {:else if verifyStatus === 'ok'}
-          <p class="text-success text-xs mt-0.5" data-testid="verify-success">✓ Key is valid.</p>
-        {:else if verifying}
-          <p class="text-base-content/40 text-xs mt-0.5">Verifying…</p>
-        {/if}
       </div>
 
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium" for="model-select">Gemini Model</label>
-        <select
-          id="model-select"
-          class="select select-bordered w-full text-sm"
-          bind:value={selectedModel}
-          onchange={saveModelSelection}
-          data-testid="model-select"
-        >
-          {#each GEMINI_MODELS as m}
-            <option value={m.id}>{m.label}</option>
-          {/each}
-        </select>
-      </div>
+      {#if selectedProvider === 'cloud'}
+        <!-- Cloud: API key + model -->
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium" for="api-key">Gemini API Key</label>
+          <div class="relative">
+            <input
+              id="api-key"
+              type="password"
+              class="input input-bordered w-full pr-10 text-sm
+                {formatError ? 'input-error' : verifyStatus === 'ok' ? 'input-success' : verifyStatus === 'error' ? 'input-error' : ''}"
+              placeholder="AIza…"
+              bind:value={apiKey}
+              onkeydown={(e) => e.key === 'Enter' && submitKey()}
+              data-testid="api-key-input"
+            />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none">
+              {#if verifying}
+                <span class="loading loading-spinner loading-xs text-base-content/40"></span>
+              {:else if verifyStatus === 'ok'}
+                <span class="text-success font-bold">✓</span>
+              {:else if verifyStatus === 'error' || formatError}
+                <span class="text-error">✕</span>
+              {/if}
+            </span>
+          </div>
+          {#if formatError}
+            <p class="text-error text-xs mt-0.5" data-testid="key-format-error">{formatError}</p>
+          {:else if verifyStatus === 'error'}
+            <p class="text-error text-xs mt-0.5" data-testid="verify-error">{verifyError}</p>
+          {:else if verifyStatus === 'ok'}
+            <p class="text-success text-xs mt-0.5" data-testid="verify-success">✓ Key is valid.</p>
+          {:else if verifying}
+            <p class="text-base-content/40 text-xs mt-0.5">Verifying…</p>
+          {/if}
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium" for="model-select">Gemini Model</label>
+          <select
+            id="model-select"
+            class="select select-bordered w-full text-sm"
+            bind:value={selectedModel}
+            onchange={saveModelSelection}
+            data-testid="model-select"
+          >
+            {#each GEMINI_MODELS as m}
+              <option value={m.id}>{m.label}</option>
+            {/each}
+          </select>
+        </div>
+      {:else}
+        <!-- Local: model loader -->
+        <LocalModelLoader onReady={() => { localModelReady = true; }} />
+      {/if}
 
       <div class="flex flex-col gap-2">
         <button
