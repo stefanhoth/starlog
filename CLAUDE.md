@@ -1,5 +1,22 @@
 # STARlog — Claude Instructions
 
+## Test Strategy: Unit Tests vs E2E Tests
+
+**Default to unit tests (Vitest, `npm run test:unit`) for pure logic.** They run in milliseconds with no browser or network overhead and are the right home for any function that has no DOM, IDB, or browser-API dependency.
+
+Use a unit test when the code under test:
+- Is a pure function (parsing, validation, formatting, sorting, transformation)
+- Can be imported directly in a Node environment
+- Has many input permutations worth testing exhaustively
+
+Use a Playwright E2E test (`npm run test:e2e` / `test:e2e:cloud`) only when you need:
+- A real browser (actual DOM rendering, CSS, focus behaviour)
+- Real IndexedDB (persistence, store reads/writes across page loads)
+- The full user flow across multiple views or navigations
+- File picker / clipboard / download interactions
+
+**Practical rule:** if you can call the function directly in a `.test.ts` file and assert on its return value or thrown error, write a unit test. Reserve E2E tests for the happy-path smoke test that proves the UI wires everything together. Do not duplicate pure-logic coverage in both layers — unit tests are ~100× faster and don't need Docker or a Chromium install.
+
 ## Running E2E Tests
 
 Use the right script for your environment:

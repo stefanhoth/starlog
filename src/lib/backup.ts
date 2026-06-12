@@ -167,14 +167,19 @@ export function exportData(): void {
   URL.revokeObjectURL(url);
 }
 
-export async function parseBackup(file: File): Promise<BackupBundle> {
+/**
+ * Pure validator: parses and validates a JSON string as a BackupBundle.
+ * Throws Error with a user-readable message on any validation failure.
+ * No DOM or browser globals — safe to call from unit tests.
+ */
+export function parseBackupJson(json: string): BackupBundle {
   let data: unknown;
   try {
-    data = JSON.parse(await file.text());
+    data = JSON.parse(json);
   } catch {
     throw new Error('File is not valid JSON.');
   }
-  if (typeof data !== 'object' || data === null) throw new Error('Invalid backup file.');
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) throw new Error('Invalid backup file.');
   const d = data as Record<string, unknown>;
 
   // Version check — reject bundles from a newer app build
@@ -218,6 +223,11 @@ export async function parseBackup(file: File): Promise<BackupBundle> {
   }
 
   return data as BackupBundle;
+}
+
+/** Thin browser wrapper: reads the File and delegates to parseBackupJson. */
+export async function parseBackup(file: File): Promise<BackupBundle> {
+  return parseBackupJson(await file.text());
 }
 
 export function applyImport(bundle: BackupBundle): void {
