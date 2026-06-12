@@ -137,3 +137,209 @@ test('export works in manual mode without an API key', async ({ page, context })
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
   expect(clipboard).toBe(EXPECTED_MARKDOWN);
 });
+
+// ── Bulk Markdown export (issue #186) ────────────────────────────────────────
+
+function makeBulkStory(overrides: Partial<Story> = {}): Story {
+  return {
+    id: `bulk-${Math.random().toString(36).slice(2)}`,
+    title: 'Story',
+    original_language: 'en',
+    competency_tags: [],
+    star: { situation: 'Situation', task: 'Task', action: ['Action step'], result: 'Result' },
+    quality: { situation: 'high', task: 'high', action: 'high', result: 'high', notes: 'private ai note' },
+    notes: 'private personal note',
+    rank: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+async function openDataWithStories(
+  page: Page,
+  stories: Story[],
+  { apiKey = 'AIzaTestKey123' } = {}
+) {
+  await page.goto('/');
+  await clearStorage(page);
+  await page.evaluate(({ stories, apiKey }) => {
+    localStorage.setItem('starlog_settings', JSON.stringify({ apiKey, consentGiven: true }));
+    localStorage.setItem('starlog_stories', JSON.stringify(stories));
+  }, { stories, apiKey });
+  await page.reload();
+  await page.goto('/#/data');
+}
+
+test.describe('bulk export', () => {
+  test('Export ▾ button is disabled when no stories exist', async ({ page }) => {
+    await openDataWithStories(page, []);
+    const btn = page.getByTestId('bulk-export-btn');
+    await expect(btn).toBeVisible();
+    await expect(btn).toBeDisabled();
+  });
+
+  test('Export ▾ dropdown shows Download and Copy actions when stories exist', async ({ page }) => {
+    await openDataWithStories(page, [makeBulkStory({ title: 'Alpha' })]);
+    await page.getByTestId('bulk-export-btn').click();
+    await expect(page.getByTestId('bulk-export-download-btn')).toBeVisible();
+    await expect(page.getByTestId('bulk-export-copy-btn')).toBeVisible();
+  });
+
+  test('Download produces starlog-stories-YYYY-MM-DD.md with correct header', async ({ page }) => {
+    const story = makeBulkStory({ title: 'Alpha', rank: 5 });
+    await openDataWithStories(page, [story]);
+
+    await page.getByTestId('bulk-export-btn').click();
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByTestId('bulk-export-download-btn').click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toMatch(/^starlog-stories-\d{4}-\d{2}-\d{2}\.md$/);
+
+    const path = await download.path();
+    const content = await readFile(path, 'utf-8');
+    expect(content).toContain('# Story Library Export');
+    expect(content).toContain('1 story ·');
+    expect(content).toContain('# Alpha');
+    expect(content).not.toContain('private personal note');
+    expect(content).not.toContain('private ai note');
+  });
+
+  test('Copy to clipboard shows Copied N stories ✓ confirmation', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const stories = [
+      makeBulkStory({ title: 'Alpha', rank: 5 }),
+      makeBulkStory({ title: 'Beta', rank: 3 }),
+    ];
+    await openDataWithStories(page, stories);
+
+    await page.getByTestId('bulk-export-btn').click();
+    await page.getByTestId('bulk-export-copy-btn').click();
+
+    await expect(page.getByTestId('bulk-export-btn')).toHaveText(/Copied 2 stories ✓/);
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboard).toContain('# Story Library Export');
+    expect(clipboard).toContain('2 stories ·');
+    expect(clipboard).not.toContain('private personal note');
+    expect(clipboard).not.toContain('private ai note');
+  });
+
+  test('single story: header says "1 story" and no --- separator appears', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await openDataWithStories(page, [makeBulkStory({ title: 'Solo Story', rank: 2 })]);
+
+    await page.getByTestId('bulk-export-btn').click();
+    await page.getByTestId('bulk-export-copy-btn').click();
+    await expect(page.getByTestId('bulk-export-btn')).toHaveText(/Copied 1 story ✓/);
+
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboard).toContain('1 story ·');
+    expect(clipboard).not.toContain('\n---\n');
+  });
+
+  test('stories are sorted rank desc, then createdAt desc; null rank sorts last', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const stories = [
+      makeBulkStory({ id: 'unranked', title: 'Unranked', rank: null, createdAt: '2024-01-03T00:00:00Z' }),
+      makeBulkStory({ id: 'rank3',    title: 'Rank3',    rank: 3,    createdAt: '2024-01-01T00:00:00Z' }),
+      makeBulkStory({ id: 'rank5',    title: 'Rank5',    rank: 5,    createdAt: '2024-01-02T00:00:00Z' }),
+    ];
+    await openDataWithStories(page, stories);
+
+    await page.getByTestId('bulk-export-btn').click();
+    await page.getByTestId('bulk-export-copy-btn').click();
+
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    const rank5Pos   = clipboard.indexOf('# Rank5');
+    const rank3Pos   = clipboard.indexOf('# Rank3');
+    const unrankedPos = clipboard.indexOf('# Unranked');
+    expect(rank5Pos).toBeLessThan(rank3Pos);
+    expect(rank3Pos).toBeLessThan(unrankedPos);
+  });
+
+  test('exactly N-1 separators for N stories', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const stories = [
+      makeBulkStory({ title: 'A', rank: 3 }),
+      makeBulkStory({ title: 'B', rank: 2 }),
+      makeBulkStory({ title: 'C', rank: 1 }),
+    ];
+    await openDataWithStories(page, stories);
+
+    await page.getByTestId('bulk-export-btn').click();
+    await page.getByTestId('bulk-export-copy-btn').click();
+
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    const separators = (clipboard.match(/\n---\n/g) || []).length;
+    expect(separators).toBe(2);
+  });
+
+  test('body containing literal --- does not corrupt story boundaries', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const tricky = makeBulkStory({
+      title: 'Tricky',
+      rank: 5,
+      star: { situation: 'Before\n---\nAfter', task: 'Task', action: ['step'], result: 'Result' },
+    });
+    const other = makeBulkStory({ title: 'Other', rank: 3 });
+    await openDataWithStories(page, [tricky, other]);
+
+    await page.getByTestId('bulk-export-btn').click();
+    await page.getByTestId('bulk-export-copy-btn').click();
+
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    const h1Matches = clipboard.match(/^# \S/gm) || [];
+    // Header "# Story Library Export" + 2 story headings
+    expect(h1Matches.length).toBe(3);
+  });
+
+  test('Download and Copy produce the same content', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const stories = [
+      makeBulkStory({ title: 'Alpha', rank: 4 }),
+      makeBulkStory({ title: 'Beta',  rank: 2 }),
+    ];
+    await openDataWithStories(page, stories);
+
+    // Download
+    await page.getByTestId('bulk-export-btn').click();
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByTestId('bulk-export-download-btn').click();
+    const download = await downloadPromise;
+    const downloaded = await readFile(await download.path(), 'utf-8');
+
+    // Copy — need to reopen the dropdown
+    await page.getByTestId('bulk-export-btn').click();
+    await page.getByTestId('bulk-export-copy-btn').click();
+    await expect(page.getByTestId('bulk-export-btn')).toHaveText(/Copied/);
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+
+    // Content must be identical except the date line can differ only if test crosses midnight
+    expect(copied).toContain('# Alpha');
+    expect(downloaded).toContain('# Alpha');
+    // Strip the date line before comparing (download and copy both call storiesToMarkdown with new Date())
+    const strip = (s: string) => s.replace(/\*\d+ stories? · exported .+\*/, '*DATE*');
+    expect(strip(copied)).toBe(strip(downloaded));
+  });
+
+  test('bulk export works in manual mode (no API key)', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await openDataWithStories(page, [makeBulkStory({ title: 'Manual', rank: 1 })], { apiKey: '' });
+
+    await page.getByTestId('bulk-export-btn').click();
+    await page.getByTestId('bulk-export-copy-btn').click();
+    await expect(page.getByTestId('bulk-export-btn')).toHaveText(/Copied 1 story ✓/);
+
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboard).toContain('# Manual');
+  });
+
+  test('Escape closes the dropdown and returns focus to the trigger', async ({ page }) => {
+    await openDataWithStories(page, [makeBulkStory({ title: 'Alpha', rank: 1 })]);
+    await page.getByTestId('bulk-export-btn').click();
+    await expect(page.getByTestId('bulk-export-download-btn')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('bulk-export-download-btn')).not.toBeVisible();
+  });
+});

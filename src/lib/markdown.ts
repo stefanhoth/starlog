@@ -61,6 +61,37 @@ export function storyToMarkdown(story: Story): string {
 }
 
 /**
+ * Serialises the whole story library to a single Markdown document for sharing.
+ * Display-only: NOT a backup and NOT re-importable — use JSON backup to restore.
+ * Composes storyToMarkdown() so notes/quality are excluded for free.
+ * `---` between stories is a visual rule only; `# {title}` is the structural boundary.
+ *
+ * @param exportedAt - injectable for deterministic/TZ-safe tests; defaults to now
+ */
+export function storiesToMarkdown(stories: Story[], exportedAt: Date = new Date()): string {
+  if (stories.length === 0) return '';
+
+  // Sort: rank desc, createdAt desc as tiebreak. null rank sorts last.
+  // This deliberately inverts StoryBank's on-screen order (null = needs attention = shown first there).
+  const sorted = [...stories].sort((a, b) => {
+    if (a.rank === null && b.rank === null) {
+      return b.createdAt.localeCompare(a.createdAt);
+    }
+    if (a.rank === null) return 1;
+    if (b.rank === null) return -1;
+    if (b.rank !== a.rank) return b.rank - a.rank;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
+
+  const n = sorted.length;
+  const dateStr = exportedAt.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  const header = `# Story Library Export\n*${n} ${n === 1 ? 'story' : 'stories'} · exported ${dateStr}*`;
+
+  const bodies = sorted.map(s => storyToMarkdown(s));
+  return header + '\n\n' + bodies.join('\n---\n\n');
+}
+
+/**
  * Triggers a browser file download for a Markdown string.
  * Defers revokeObjectURL to avoid cancelling the download in some browsers.
  */
