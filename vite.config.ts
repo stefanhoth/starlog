@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -35,5 +36,9 @@ export default defineConfig(({ command }) => ({
   },
   define: {
     __APP_VERSION__: JSON.stringify(process.env.APP_VERSION ?? 'dev'),
+  },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
   },
 }))
