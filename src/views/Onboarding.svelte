@@ -3,7 +3,8 @@
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { navigate, openJob } from '../lib/stores/view';
   import { untrack } from 'svelte';
-  import { verifyApiKey, extractCompetencies, GeminiError } from '../lib/gemini';
+  import { verifyApiKey } from '../lib/gemini';
+  import { dispatchExtractCompetencies, GeminiError } from '../lib/ai-dispatch';
   import { GEMINI_MODELS, type GeminiModel, type AiProvider } from '../lib/types';
   import { parseBackup, applyImport, type BackupBundle } from '../lib/backup';
   import { isEngineReady } from '../lib/local';
@@ -147,7 +148,7 @@
     extracting = true;
     extractError = '';
     try {
-      const comps = await extractCompetencies(jobDescription.trim());
+      const comps = await dispatchExtractCompetencies(jobDescription.trim());
       extractedComps = comps;
       step = 'job-review';
     } catch (err) {
@@ -701,6 +702,9 @@
         </AiWorking>
         <button class="btn btn-ghost" onclick={skipJobEntry}>Skip</button>
       </div>
+      <span class="badge badge-sm badge-ghost text-base-content/40 self-end" data-testid="ai-mode-indicator">
+        {$settingsStore.aiProvider === 'local' ? '🔒 Local AI' : '☁️ Cloud AI'}
+      </span>
 
     </div>
   </div>
