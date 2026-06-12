@@ -13,6 +13,10 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: 'June 2026',
     changes: [
       {
+        title: 'Run AI completely on your device — no key needed',
+        detail: 'Local AI mode lets you structure stories and extract job competencies using a model that runs entirely in your browser. Nothing leaves your device. Available now in Chrome 137+, Edge 137+, and Opera 121+ — switch to Local AI in Settings.',
+      },
+      {
         title: 'Export your whole story library as Markdown',
         detail: 'Download all your stories as a single readable Markdown file from the Data screen — great for sharing with a mentor, pasting into an LLM for mock-interview practice, or archiving outside the app.',
       },
