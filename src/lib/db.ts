@@ -10,6 +10,10 @@ export type StarlogDB = IDBPDatabase<StarlogSchema>;
 
 let _db: Promise<StarlogDB> | null = null;
 
+export function _resetDB(): void {
+  _db = null;
+}
+
 export function getDB(): Promise<StarlogDB> {
   if (!_db) {
     _db = openDB<StarlogSchema>('starlog', 2, {

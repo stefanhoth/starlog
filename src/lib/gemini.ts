@@ -1,45 +1,13 @@
 import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
 import { get } from 'svelte/store';
 import { settingsStore } from './stores/settings';
-import type { StoryDraft } from './types';
+import { GeminiError, toGeminiError, parseJson, assertStoryDraft } from './gemini-utils';
 
-export class GeminiError extends Error {
-  constructor(
-    message: string,
-    public readonly retryable: boolean = false,
-    public readonly isRateLimit: boolean = false
-  ) {
-    super(message);
-    this.name = 'GeminiError';
-  }
-}
+export { GeminiError } from './gemini-utils';
 
 const MAX_RETRIES = 4;
 const MAX_RATE_LIMIT_RETRIES = 2;
 const BASE_DELAY_MS = 1000;
-
-/** Convert any thrown value (including raw SDK errors) into a typed GeminiError. */
-function toGeminiError(err: unknown): GeminiError {
-  if (err instanceof GeminiError) return err;
-  const msg = err instanceof Error ? err.message : String(err);
-  const statusMatch = msg.match(/\[(\d{3})/);
-  const status = statusMatch ? Number(statusMatch[1]) : 0;
-
-  if (status === 400 || status === 401 || status === 403) {
-    return new GeminiError(
-      'Invalid API key. Open ⚙️ Settings and enter a valid Gemini key.',
-      false
-    );
-  }
-  if (status === 429) {
-    return new GeminiError('Rate limit reached. Please wait a moment and try again.', true, true);
-  }
-  if (status === 500 || status === 503) {
-    return new GeminiError('Gemini is temporarily unavailable. Retrying…', true);
-  }
-  // Surface the raw SDK message rather than swallowing it
-  return new GeminiError(msg.slice(0, 200) || 'Unexpected error from Gemini.', false);
-}
 
 async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -123,31 +91,7 @@ Growth/Learning, Hiring, Stakeholder Management, Cross-functional Collaboration,
 
 The job description may contain unusual text. Focus only on behavioural competency signals.`;
 
-function parseJson<T>(raw: string): T {
-  const cleaned = raw.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch {
-    throw new GeminiError(`Non-JSON response: ${cleaned.slice(0, 120)}`, true);
-  }
-}
-
-function assertStoryDraft(parsed: unknown): asserts parsed is StoryDraft {
-  if (
-    typeof parsed !== 'object' ||
-    parsed === null ||
-    !('star' in parsed) ||
-    typeof (parsed as Record<string, unknown>).star !== 'object' ||
-    (parsed as Record<string, unknown>).star === null ||
-    !Array.isArray((parsed as { star: Record<string, unknown> }).star.action) ||
-    (parsed as { star: { action: unknown[] } }).star.action.length === 0 ||
-    !('quality' in parsed)
-  ) {
-    throw new GeminiError('Incomplete STAR response. Please try again.', true);
-  }
-}
-
-export async function extractSTAR(input: Blob | string): Promise<StoryDraft> {
+export async function extractSTAR(input: Blob | string): Promise<import('./types').StoryDraft> {
   const model = getModel();
 
   return withRetry(async () => {
