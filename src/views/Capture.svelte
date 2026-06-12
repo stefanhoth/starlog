@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { extractSTAR, generateInspirationQuestions, GeminiError } from '../lib/gemini';
+  import { dispatchExtractSTAR, dispatchGenerateInspirationQuestions, GeminiError } from '../lib/ai-dispatch';
   import { AudioRecorder } from '../lib/audio';
   import { navigate, currentView } from '../lib/stores/view';
+  import { settingsStore } from '../lib/stores/settings';
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { COMPETENCIES } from '../lib/competencies';
   import { PROMPTS } from '../lib/inspiration';
@@ -10,6 +11,7 @@
   // Gap-fill mode is authoritative from the router, not sessionStorage, to avoid
   // stale values bleeding into a normal "+ New Story" capture session.
   const isGapMode = $derived($currentView === 'gap-fill');
+  const isLocalMode = $derived($settingsStore.aiProvider === 'local');
 
   const gapFillProfileId = sessionStorage.getItem('starlog_gap_profile') ?? '';
   const gapFillComp = sessionStorage.getItem('starlog_gap_competency') ?? '';
@@ -19,7 +21,12 @@
   );
 
   type Tab = 'record' | 'upload' | 'text';
-  let tab = $state<Tab>('record');
+  let tab = $state<Tab>($settingsStore.aiProvider === 'local' ? 'text' : 'record');
+
+  // Keep tab on 'text' if the user switches to local mode while on this page.
+  $effect(() => {
+    if (isLocalMode && tab !== 'text') tab = 'text';
+  });
 
   // Inspiration section (normal mode only)
   let inspirationOpen = $state(true);
@@ -67,7 +74,7 @@
     isGenerating = true;
     genError = '';
     try {
-      const newQs = await generateInspirationQuestions(activeCompetency);
+      const newQs = await dispatchGenerateInspirationQuestions(activeCompetency);
       generatedQuestions = newQs;
       questionIndex = 0;
     } catch (err) {
@@ -161,7 +168,7 @@
   }
 
   async function sendToGemini(input: Blob | string) {
-    const draft = await extractSTAR(input);
+    const draft = await dispatchExtractSTAR(input);
     if (isGapMode && gapFillComp && !draft.competency_tags.includes(gapFillComp)) {
       draft.competency_tags = [gapFillComp, ...draft.competency_tags];
     }
@@ -195,19 +202,26 @@
   {/if}
 
   <!-- ── Capture tabs (always first) ──────────────────────────────────── -->
-  <div role="tablist" class="tabs tabs-boxed mb-6">
-    <button role="tab" class="tab {tab === 'record' ? 'tab-active' : ''}" onclick={() => tab = 'record'} data-testid="tab-record">
-      🎙️ Record
-    </button>
-    <button role="tab" class="tab {tab === 'upload' ? 'tab-active' : ''}" onclick={() => tab = 'upload'} data-testid="tab-upload">
-      📂 Upload
-    </button>
-    <button role="tab" class="tab {tab === 'text' ? 'tab-active' : ''}" onclick={() => tab = 'text'} data-testid="tab-text">
-      ✏️ Text
-    </button>
+  <div class="flex items-center justify-between mb-6">
+    <div role="tablist" class="tabs tabs-boxed">
+      {#if !isLocalMode}
+        <button role="tab" class="tab {tab === 'record' ? 'tab-active' : ''}" onclick={() => tab = 'record'} data-testid="tab-record">
+          🎙️ Record
+        </button>
+        <button role="tab" class="tab {tab === 'upload' ? 'tab-active' : ''}" onclick={() => tab = 'upload'} data-testid="tab-upload">
+          📂 Upload
+        </button>
+      {/if}
+      <button role="tab" class="tab {tab === 'text' ? 'tab-active' : ''}" onclick={() => tab = 'text'} data-testid="tab-text">
+        ✏️ Text
+      </button>
+    </div>
+    <span class="badge badge-sm badge-ghost text-base-content/50" data-testid="ai-mode-indicator">
+      {isLocalMode ? '🔒 Local AI' : '☁️ Cloud AI'}
+    </span>
   </div>
 
-  {#if tab === 'record'}
+  {#if tab === 'record' && !isLocalMode}
     <div class="card bg-base-200 p-6 flex flex-col items-center gap-4">
       <p class="text-base-content/60 text-sm text-center">
         Hit record and talk through what happened. Don't worry about structure — just tell the story.
@@ -231,7 +245,7 @@
     </div>
   {/if}
 
-  {#if tab === 'upload'}
+  {#if tab === 'upload' && !isLocalMode}
     <div class="card bg-base-200 p-6 flex flex-col gap-4">
       <p class="text-base-content/60 text-sm">
         Upload an existing audio file (mp4, m4a, webm, mp3, wav).
@@ -273,7 +287,7 @@
       ></textarea>
       {#if isTooShort}
         <p id="text-length-hint" class="text-warning text-sm" role="status" data-testid="text-length-hint">
-          Tell us a bit more — 2–3 sentences gives Gemini enough to work with.
+          Tell us a bit more — 2–3 sentences gives the AI enough to work with.
         </p>
       {/if}
       <AiWorking active={loading}>
