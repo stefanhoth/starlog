@@ -31,10 +31,13 @@ export async function dispatchExtractCompetencies(jobDescription: string): Promi
 /**
  * Routes inspiration question generation to the active AI provider.
  */
-export async function dispatchGenerateInspirationQuestions(competency: string): Promise<string[]> {
+export async function dispatchGenerateInspirationQuestions(
+  competency: string,
+  previousQuestions: string[] = [],
+): Promise<string[]> {
   if (get(settingsStore).aiProvider !== 'local') {
-    return cloud.generateInspirationQuestions(competency);
+    return cloud.generateInspirationQuestions(competency, previousQuestions);
   }
   const { generateInspirationQuestions } = await import('./local');
-  return generateInspirationQuestions(competency);
+  return generateInspirationQuestions(competency, previousQuestions);
 }
