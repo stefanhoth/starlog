@@ -140,7 +140,7 @@
         {:else}
           <details bind:open={bulkExportOpen} class="relative shrink-0" data-testid="bulk-export-dropdown">
             <summary bind:this={bulkExportSummary} class="btn btn-outline btn-sm list-none cursor-pointer" data-testid="bulk-export-btn"
-              onkeydown={(e) => { if (e.key === 'Escape') { bulkExportOpen = false; bulkExportSummary?.focus(); } }}
+              onkeydown={(e) => { if (e.key === 'Escape') { bulkExportOpen = false; requestAnimationFrame(() => bulkExportSummary?.focus()); } }}
             >
               {#if bulkCopyStatus === 'ok'}Copied {storyCount} {storyCount === 1 ? 'story' : 'stories'} ✓{:else if bulkCopyStatus === 'error'}Copy failed{:else}Export ▾{/if}
             </summary>
