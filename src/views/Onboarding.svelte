@@ -8,6 +8,7 @@
   import { GEMINI_MODELS, type GeminiModel, type AiProvider } from '../lib/types';
   import { parseBackup, applyImport, type BackupBundle } from '../lib/backup';
   import { isEngineReady } from '../lib/local';
+  import { canUseLocalLlm } from '../lib/ai-capabilities';
   import AiWorking from '../lib/components/AiWorking.svelte';
   import Brand from '../lib/components/Brand.svelte';
   import WhatsNewPanel from '../lib/components/WhatsNewPanel.svelte';
@@ -15,6 +16,7 @@
   import { CHANGELOG } from '../lib/changelog';
 
   const recentChanges = CHANGELOG.flatMap(e => e.changes).slice(0, 3);
+  const localCapability = canUseLocalLlm();
 
   // addJobMode: skip key step and go straight to job entry (for sidebar "+ add job")
   let { addJobMode = false }: { addJobMode?: boolean } = $props();
@@ -87,7 +89,7 @@
       geminiModel: selectedModel,
       aiProvider: selectedProvider,
     });
-    if ($jobProfilesStore.length === 0 && selectedProvider === 'cloud') {
+    if ($jobProfilesStore.length === 0) {
       navigate('add-job');
     } else {
       navigate('job-hub');
@@ -393,57 +395,91 @@
         <div class="w-full max-w-sm flex flex-col gap-5">
           <div>
             <div class="flex items-center gap-2">
-              <h2 class="text-xl font-semibold">Connect Gemini AI</h2>
-              <button
-                class="text-xs text-base-content/40 hover:text-primary transition-colors"
-                onclick={() => showSecurityPopover = true}
-                aria-label="Why your own key?"
-              >ⓘ more info</button>
+              <h2 class="text-xl font-semibold">
+                {selectedProvider === 'local' ? 'Set up Local AI' : 'Connect Gemini AI'}
+              </h2>
+              {#if selectedProvider === 'cloud'}
+                <button
+                  class="text-xs text-base-content/40 hover:text-primary transition-colors"
+                  onclick={() => showSecurityPopover = true}
+                  aria-label="Why your own key?"
+                >ⓘ more info</button>
+              {/if}
             </div>
             <p class="text-sm text-base-content/50 mt-1 leading-relaxed">
-              STARlog uses your own Gemini API key — your calls go directly to Google, never through STARlog.
+              {#if selectedProvider === 'local'}
+                AI runs entirely in your browser — nothing leaves your device. No key required.
+              {:else}
+                STARlog uses your own Gemini API key — your calls go directly to Google, never through STARlog.
+              {/if}
             </p>
           </div>
 
-          <div class="flex flex-col gap-1">
-            <div class="flex items-center justify-between">
-              <label class="text-sm font-medium" for="api-key">Gemini API Key</label>
-              <a class="text-xs text-primary hover:text-primary/80 transition-colors"
-                href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">
-                Get a free key ↗
-              </a>
+          {#if localCapability !== 'unsupported'}
+            <div class="flex flex-col gap-1.5">
+              <span class="text-sm font-medium">AI Provider</span>
+              <div role="tablist" class="tabs tabs-boxed tabs-sm" data-testid="provider-toggle">
+                <button
+                  role="tab"
+                  class="tab {selectedProvider === 'cloud' ? 'tab-active' : ''}"
+                  onclick={() => selectedProvider = 'cloud'}
+                  aria-selected={selectedProvider === 'cloud'}
+                  data-testid="provider-cloud"
+                >Cloud (Gemini)</button>
+                <button
+                  role="tab"
+                  class="tab {selectedProvider === 'local' ? 'tab-active' : ''}"
+                  onclick={() => selectedProvider = 'local'}
+                  aria-selected={selectedProvider === 'local'}
+                  data-testid="provider-local"
+                >Local AI</button>
+              </div>
             </div>
-            <div class="relative">
-              <input
-                id="api-key"
-                type="password"
-                class="input input-bordered w-full pr-10 text-sm bg-base-100
-                  {formatError ? 'input-error' : verifyStatus === 'ok' ? 'input-success' : verifyStatus === 'error' ? 'input-error' : ''}"
-                placeholder="AIza…"
-                bind:value={apiKey}
-                onkeydown={(e) => e.key === 'Enter' && submitKey()}
-                data-testid="api-key-input"
-              />
-              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none">
-                {#if verifying}
-                  <span class="loading loading-spinner loading-xs text-base-content/40"></span>
-                {:else if verifyStatus === 'ok'}
-                  <span class="text-success font-bold">✓</span>
-                {:else if verifyStatus === 'error' || formatError}
-                  <span class="text-error">✕</span>
-                {/if}
-              </span>
+          {/if}
+
+          {#if selectedProvider === 'cloud'}
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center justify-between">
+                <label class="text-sm font-medium" for="api-key">Gemini API Key</label>
+                <a class="text-xs text-primary hover:text-primary/80 transition-colors"
+                  href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">
+                  Get a free key ↗
+                </a>
+              </div>
+              <div class="relative">
+                <input
+                  id="api-key"
+                  type="password"
+                  class="input input-bordered w-full pr-10 text-sm bg-base-100
+                    {formatError ? 'input-error' : verifyStatus === 'ok' ? 'input-success' : verifyStatus === 'error' ? 'input-error' : ''}"
+                  placeholder="AIza…"
+                  bind:value={apiKey}
+                  onkeydown={(e) => e.key === 'Enter' && submitKey()}
+                  data-testid="api-key-input"
+                />
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none">
+                  {#if verifying}
+                    <span class="loading loading-spinner loading-xs text-base-content/40"></span>
+                  {:else if verifyStatus === 'ok'}
+                    <span class="text-success font-bold">✓</span>
+                  {:else if verifyStatus === 'error' || formatError}
+                    <span class="text-error">✕</span>
+                  {/if}
+                </span>
+              </div>
+              {#if formatError}
+                <p class="text-error text-xs mt-0.5" data-testid="key-format-error">{formatError}</p>
+              {:else if verifyStatus === 'error'}
+                <p class="text-error text-xs mt-0.5" data-testid="verify-error">{verifyError}</p>
+              {:else if verifyStatus === 'ok'}
+                <p class="text-success text-xs mt-0.5" data-testid="verify-success">✓ Key is valid and working.</p>
+              {:else if verifying}
+                <p class="text-base-content/40 text-xs mt-0.5">Verifying key…</p>
+              {/if}
             </div>
-            {#if formatError}
-              <p class="text-error text-xs mt-0.5" data-testid="key-format-error">{formatError}</p>
-            {:else if verifyStatus === 'error'}
-              <p class="text-error text-xs mt-0.5" data-testid="verify-error">{verifyError}</p>
-            {:else if verifyStatus === 'ok'}
-              <p class="text-success text-xs mt-0.5" data-testid="verify-success">✓ Key is valid and working.</p>
-            {:else if verifying}
-              <p class="text-base-content/40 text-xs mt-0.5">Verifying key…</p>
-            {/if}
-          </div>
+          {:else}
+            <LocalModelLoader onReady={() => { localModelReady = true; }} />
+          {/if}
 
           <button
             class="btn btn-primary w-full"
@@ -635,7 +671,7 @@
       {#if !addJobMode}
         <div class="flex items-center gap-2 text-sm text-base-content/50">
           <span class="w-5 h-5 rounded-full bg-success text-success-content text-xs flex items-center justify-center font-bold">✓</span>
-          <span class="text-success text-xs">API key connected</span>
+          <span class="text-success text-xs">{$settingsStore.aiProvider === 'local' ? 'Local AI ready' : 'API key connected'}</span>
           <span class="text-base-content/20 mx-1">·</span>
           <span class="w-5 h-5 rounded-full bg-primary text-primary-content text-xs flex items-center justify-center font-bold">2</span>
           <span class="font-medium text-base-content">Add a job</span>
