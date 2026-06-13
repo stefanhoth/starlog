@@ -4,53 +4,13 @@
   import { settingsStore } from '../lib/stores/settings';
   import { navigate } from '../lib/stores/view';
   import { exportData, parseBackup, applyImport, type BackupBundle } from '../lib/backup';
-  import { storiesToMarkdown, downloadMarkdown } from '../lib/markdown';
+  import { storiesToMarkdown } from '../lib/markdown';
+  import ExportMenu from '../lib/components/ExportMenu.svelte';
 
   const storyCount = $derived($storiesStore.length);
   const profileCount = $derived($jobProfilesStore.length);
 
   let showClearConfirm = $state(false);
-
-  // ── Bulk Markdown export ───────────────────────────────────────────
-  let bulkExportOpen  = $state(false);
-  let bulkCopyStatus  = $state<'idle' | 'ok' | 'error'>('idle');
-  let bulkCopyTimer: ReturnType<typeof setTimeout>;
-  let bulkExportSummary: HTMLElement | undefined = $state();
-
-  // Outside-click closes the dropdown. Escape-to-close is handled by onkeydown on <details>.
-  $effect(() => {
-    if (!bulkExportOpen) return;
-    function onDocClick(e: MouseEvent) {
-      // details.contains guards against closing when clicking <summary> natively (let the toggle win).
-      const details = bulkExportSummary?.closest('details');
-      if (details && !details.contains(e.target as Node)) bulkExportOpen = false;
-    }
-    document.addEventListener('click', onDocClick, { capture: true });
-    return () => document.removeEventListener('click', onDocClick, { capture: true });
-  });
-
-  // Clear the status-reset timer on unmount to avoid a stale $state write.
-  $effect(() => () => clearTimeout(bulkCopyTimer));
-
-  async function handleBulkCopy() {
-    bulkExportOpen = false;
-    bulkExportSummary?.focus();
-    clearTimeout(bulkCopyTimer);
-    try {
-      await navigator.clipboard.writeText(storiesToMarkdown($storiesStore));
-      bulkCopyStatus = 'ok';
-    } catch {
-      bulkCopyStatus = 'error';
-    }
-    bulkCopyTimer = setTimeout(() => (bulkCopyStatus = 'idle'), 2000);
-  }
-
-  function handleBulkDownload() {
-    bulkExportOpen = false;
-    bulkExportSummary?.focus();
-    const date = new Date().toISOString().slice(0, 10);
-    downloadMarkdown(`starlog-stories-${date}.md`, storiesToMarkdown($storiesStore));
-  }
 
   // ── Backup / restore ───────────────────────────────────────────────
   let importBundle = $state<BackupBundle | null>(null);
@@ -135,32 +95,17 @@
           <p class="text-xs text-base-content/50 mt-0.5">A readable copy of all your stories to share. For sharing, not restoring.</p>
           <p class="text-xs text-base-content/50">Stays on your device — nothing is uploaded.</p>
         </div>
-        {#if storyCount === 0}
-          <button class="btn btn-outline btn-sm shrink-0" disabled title="Add a story to export" data-testid="bulk-export-btn">Export ▾</button>
-        {:else}
-          <details bind:open={bulkExportOpen} class="relative shrink-0" data-testid="bulk-export-dropdown">
-            <summary bind:this={bulkExportSummary} class="btn btn-outline btn-sm list-none cursor-pointer" data-testid="bulk-export-btn"
-              onkeydown={(e) => { if (e.key === 'Escape') { bulkExportOpen = false; requestAnimationFrame(() => bulkExportSummary?.focus()); } }}
-            >
-              {#if bulkCopyStatus === 'ok'}Copied {storyCount} {storyCount === 1 ? 'story' : 'stories'} ✓{:else if bulkCopyStatus === 'error'}Copy failed{:else}Export ▾{/if}
-            </summary>
-            <div class="absolute right-0 top-full mt-1 z-10 bg-base-100 border border-base-300 rounded-lg shadow-lg w-48 py-1">
-              <button
-                class="w-full text-left px-3 py-2.5 text-sm hover:bg-base-200 transition-colors flex items-center gap-2"
-                onclick={handleBulkDownload}
-                data-testid="bulk-export-download-btn"
-              ><span aria-hidden="true">⬇️</span> Download .md</button>
-              <button
-                class="w-full text-left px-3 py-2.5 text-sm hover:bg-base-200 transition-colors flex items-center gap-2"
-                onclick={handleBulkCopy}
-                data-testid="bulk-export-copy-btn"
-              ><span aria-hidden="true">📋</span> Copy to clipboard</button>
-            </div>
-          </details>
-          <div aria-live="polite" class="sr-only">
-            {#if bulkCopyStatus === 'ok'}Story library copied to clipboard{/if}
-          </div>
-        {/if}
+        <ExportMenu
+          getContent={() => storiesToMarkdown($storiesStore)}
+          filename={`starlog-stories-${new Date().toISOString().slice(0, 10)}.md`}
+          disabled={storyCount === 0}
+          disabledTitle="Add a story to export"
+          triggerClass="btn btn-outline btn-sm"
+          testidPrefix="bulk-export"
+          copiedLabel={`Copied ${storyCount} ${storyCount === 1 ? 'story' : 'stories'} ✓`}
+          copyOkMessage="Story library copied to clipboard"
+          copyErrorMessage="Copy failed — try Download .md instead"
+        />
       </div>
 
       <div class="flex items-start justify-between gap-4">

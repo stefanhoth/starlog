@@ -344,4 +344,23 @@ test.describe('bulk export', () => {
     await page.getByTestId('bulk-export-btn').press('Escape');
     await expect(page.getByTestId('bulk-export-download-btn')).not.toBeVisible();
   });
+
+  test('copy failure is announced to screen readers via aria-live', async ({ page }) => {
+    // Force clipboard writes to reject so we exercise the error path. The shared
+    // ExportMenu must announce failures, not just successes (the bulk view used to
+    // announce success only).
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: () => Promise.reject(new Error('blocked')) },
+      });
+    });
+    await openDataWithStories(page, [makeBulkStory({ title: 'Alpha', rank: 1 })]);
+
+    await page.getByTestId('bulk-export-btn').click();
+    await page.getByTestId('bulk-export-copy-btn').click();
+
+    await expect(page.getByTestId('bulk-export-btn')).toHaveText(/Copy failed/);
+    await expect(page.locator('[aria-live="polite"]')).toContainText('Copy failed');
+  });
 });
