@@ -2,9 +2,9 @@
 
 Notation: each flow is a numbered happy path with branch notes for empty/error states. View files in parentheses.
 
-## 1. First-time setup (`Onboarding.svelte`, `App.svelte`)
+## 1. First-time setup (`Landing.svelte`, `AddJob.svelte`, `App.svelte`)
 
-1. App loads. `main.ts` runs `initStores()`, then mounts. Because `settings.consentGiven` is false, `App.svelte` redirects to `onboarding`; the view is rendered full-screen.
+1. App loads. `main.ts` runs `initStores()`, then mounts. Because `settings.consentGiven` is false, `App.svelte` renders `Landing` full-screen (no route redirect needed — `isFullScreen` is driven by `!consentGiven`).
 2. User sees the marketing landing (left: pitch + STAR primer; right: "Connect Gemini AI" key form). Optional: open privacy popover, security popover, "How it works" modal, or expand "See what's new".
 3. User pastes an API key. A debounced `$effect` validates:
    - **Branch — wrong format:** key not starting with `AIza` → inline `formatError`, no network call.
@@ -79,9 +79,9 @@ Entry: Job Hub "Start interview prep →" (mode `profile`), Story Bank "Review" 
    - Space toggles timer, → next, Esc exits.
 5. Exit returns to Job Hub (profile) or Story Bank (library).
 
-## 7. Returning user: settings update (`Onboarding.svelte` settings mode)
+## 7. Returning user: settings update (`Settings.svelte`)
 
-1. Sidebar "⚙ Settings" (or mobile Settings) → `navigate('onboarding')`. Since `consentGiven` is true, the compact Settings card renders.
+1. Sidebar "⚙ Settings" (or mobile Settings) → `navigate('settings')`. The compact Settings card renders.
 2. Update API key (same live validation) and/or model (saved on change via `saveModelSelection`). Save (gated on a valid key) or Cancel → `job-hub`.
 3. "Go to Data →" link jumps to the Data view.
 
@@ -92,7 +92,7 @@ Entry: Job Hub "Start interview prep →" (mode `profile`), Story Bank "Review" 
 3. **Import:** "↑ Restore" file picker → `parseBackup` validates shape.
    - **Branch — invalid file:** `importError` (bad JSON, missing version/stories/jobProfiles, malformed entries).
    - **Success:** confirmation card summarising counts and export date; "Confirm import" → `applyImport` (replaces all data via `restore`) → `job-hub`. Cancel discards.
-4. **Clear all data:** danger zone → "Are you absolutely sure?" modal → wipes stories, profiles, settings → `onboarding`.
+4. **Clear all data:** danger zone → "Are you absolutely sure?" modal → wipes stories, profiles, settings → `settings` route (which renders `Landing` since `consentGiven` is now false).
 
 ## 9. PWA install (`vite.config.ts`, `main.ts`)
 
@@ -101,8 +101,8 @@ Entry: Job Hub "Start interview prep →" (mode `profile`), Story Bank "Review" 
 3. `main.ts` calls `navigator.storage.persist()` to request durable storage so the OS won't evict IndexedDB under pressure.
 4. Offline: precached assets (`globPatterns`) let the shell load offline. **Branch — offline AI:** Gemini calls fail (network) and surface as retryable `GeminiError`s; capture/structure cannot complete offline. Reading, editing, mapping, and rehearsing existing data work offline.
 
-## 10. What's New / changelog (`WhatsNewPanel.svelte`, `App.svelte`, `Onboarding.svelte`)
+## 10. What's New / changelog (`WhatsNewPanel.svelte`, `App.svelte`, `Landing.svelte`)
 
 1. Sidebar "What's New" shows a primary-color dot badge when `lastSeenDate !== CHANGELOG[0].date`.
 2. Click opens a right-side drawer (`WhatsNewPanel`) listing entries (3 visible, "Show older" loads more); `onMount` marks the latest date seen (`markSeen`, persisted to IndexedDB `whatsNewLastSeen`), clearing the badge.
-3. New users can also expand "See what's new" on the onboarding landing (shows 1 entry initially).
+3. New users can also expand "See what's new" on the landing screen (shows 1 entry initially).
