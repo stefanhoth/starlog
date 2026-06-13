@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
 
 export type View =
-  | 'onboarding'
+  | 'settings'
   | 'add-job'
   | 'job-hub'
   | 'gap-fill'
@@ -12,7 +12,7 @@ export type View =
   | 'interview'
   | 'data';
 
-export const currentView = writable<View>('onboarding');
+export const currentView = writable<View>('settings');
 export const activeProfileId = writable<string>('');
 
 interface RouteState {
@@ -24,8 +24,8 @@ interface RouteState {
 function parseHash(hash: string): RouteState {
   const path = hash.replace(/^#\//, '').replace(/\/$/, '');
 
-  if (!path) return { view: 'onboarding' };
-  if (path === 'settings') return { view: 'onboarding' };
+  if (!path) return { view: 'settings' };
+  if (path === 'settings') return { view: 'settings' };
   if (path === 'job/new') return { view: 'add-job' };
   if (path === 'stories/capture') return { view: 'capture' };
   if (path === 'stories/review') return { view: 'review' };
@@ -42,12 +42,12 @@ function parseHash(hash: string): RouteState {
   const storyMatch = path.match(/^stories\/([^/]+)$/);
   if (storyMatch) return { view: 'story-detail', storyId: storyMatch[1] };
 
-  return { view: 'onboarding' };
+  return { view: 'settings' };
 }
 
 function viewToHash(view: View, profileId?: string, storyId?: string): string {
   switch (view) {
-    case 'onboarding':        return '#/settings';
+    case 'settings':          return '#/settings';
     case 'add-job':           return '#/job/new';
     case 'job-hub':            return profileId ? `#/job/${profileId}` : '#/';
     case 'gap-fill':          return profileId ? `#/job/${profileId}/gaps` : '#/';

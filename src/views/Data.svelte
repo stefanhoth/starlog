@@ -91,7 +91,7 @@
     jobProfilesStore.reset();
     settingsStore.reset();
     showClearConfirm = false;
-    navigate('onboarding');
+    navigate('settings');
   }
 </script>
 

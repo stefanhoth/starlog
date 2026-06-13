@@ -7,7 +7,9 @@
   import { exportData } from './lib/backup';
   import { deferredInstallPrompt } from './lib/stores/pwaInstall';
   import type { JobProfile } from './lib/types';
-  import Onboarding from './views/Onboarding.svelte';
+  import Landing from './views/Landing.svelte';
+  import Settings from './views/Settings.svelte';
+  import AddJob from './views/AddJob.svelte';
   import Brand from './lib/components/Brand.svelte';
   import Capture from './views/Capture.svelte';
   import Review from './views/Review.svelte';
@@ -21,13 +23,12 @@
   import { CHANGELOG } from './lib/changelog';
   import { onMount } from 'svelte';
 
-  // Redirect to onboarding if not yet configured; existing users go to job hub.
-  // Guard against pushing a redundant history entry when URL already resolved correctly.
-  // Safe to run once: initStores() completes before App mounts (see main.ts), so
+  // Returning users who land on #/ or #/settings (the default route) go straight to job-hub.
+  // New users (!consentGiven) are shown Landing full-screen regardless of the current route —
+  // no redirect needed because isFullScreen gates the entire shell.
+  // Safe to run once: initStores() completes before App mounts (main.ts), so
   // $settingsStore.consentGiven already reflects the persisted value here.
-  if (!$settingsStore.consentGiven) {
-    if ($currentView !== 'onboarding') navigate('onboarding');
-  } else if ($currentView === 'onboarding') {
+  if ($settingsStore.consentGiven && $currentView === 'settings') {
     navigate('job-hub');
   }
 
@@ -62,9 +63,10 @@
     navigate('interview');
   }
 
+  // Landing owns its own full-screen layout — App.svelte just checks !consentGiven.
+  // InterviewMode is the only other full-screen view.
   const isFullScreen = $derived(
-    $currentView === 'interview' ||
-    ($currentView === 'onboarding' && !$settingsStore.consentGiven)
+    !$settingsStore.consentGiven || $currentView === 'interview'
   );
 
   let showWhatsNew = $state(false);
@@ -193,10 +195,10 @@
 {/if}
 
 {#if isFullScreen}
-  {#if $currentView === 'interview'}
-    <InterviewMode />
+  {#if !$settingsStore.consentGiven}
+    <Landing />
   {:else}
-    <Onboarding />
+    <InterviewMode />
   {/if}
 
 {:else}
@@ -325,7 +327,7 @@
         </button>
         <button
           class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm text-base-content/50 hover:text-base-content hover:bg-base-200 transition-colors"
-          onclick={() => navigate('onboarding')}
+          onclick={() => navigate('settings')}
           data-testid="settings-cog"
         >
           <span class="w-5 shrink-0 text-center">⚙️</span>Settings
@@ -371,10 +373,10 @@
         <StoryDetail />
       {:else if $currentView === 'data'}
         <Data />
-      {:else if $currentView === 'onboarding'}
-        <Onboarding />
+      {:else if $currentView === 'settings'}
+        <Settings />
       {:else if $currentView === 'add-job'}
-        <Onboarding addJobMode />
+        <AddJob />
       {:else}
         {#if $jobProfilesStore.length > 0}
           <JobHub />
@@ -432,10 +434,10 @@
       </button>
       <button
         class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs transition-colors
-          {$currentView === 'onboarding' && $settingsStore.consentGiven
+          {$currentView === 'settings' && $settingsStore.consentGiven
             ? 'text-primary'
             : 'text-base-content/40'}"
-        onclick={() => navigate('onboarding')}
+        onclick={() => navigate('settings')}
         data-testid="mobile-nav-settings"
       >
         <span class="text-base leading-none">⚙️</span>
