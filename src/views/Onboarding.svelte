@@ -736,7 +736,7 @@
             {extracting ? 'Extracting competencies…' : 'Extract competencies →'}
           </button>
         </AiWorking>
-        <button class="btn btn-ghost" onclick={skipJobEntry}>Skip</button>
+        <button class="btn btn-ghost" onclick={skipJobEntry}>{addJobMode ? 'Cancel' : 'Skip'}</button>
       </div>
       <span class="badge badge-sm badge-ghost text-base-content/40 self-end" data-testid="ai-mode-indicator">
         {$settingsStore.aiProvider === 'local' ? '🔒 Local AI' : '☁️ Cloud AI'}
