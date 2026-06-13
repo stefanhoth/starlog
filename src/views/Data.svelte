@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { flushSync } from 'svelte';
   import { storiesStore } from '../lib/stores/stories';
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { settingsStore } from '../lib/stores/settings';
@@ -140,7 +141,7 @@
         {:else}
           <details bind:open={bulkExportOpen} class="relative shrink-0" data-testid="bulk-export-dropdown">
             <summary bind:this={bulkExportSummary} class="btn btn-outline btn-sm list-none cursor-pointer" data-testid="bulk-export-btn"
-              onkeydown={(e) => { if (e.key === 'Escape') { bulkExportOpen = false; requestAnimationFrame(() => bulkExportSummary?.focus()); } }}
+              onkeydown={(e) => { if (e.key === 'Escape') { flushSync(() => { bulkExportOpen = false; }); bulkExportSummary?.focus(); } }}
             >
               {#if bulkCopyStatus === 'ok'}Copied {storyCount} {storyCount === 1 ? 'story' : 'stories'} ✓{:else if bulkCopyStatus === 'error'}Copy failed{:else}Export ▾{/if}
             </summary>
