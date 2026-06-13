@@ -106,7 +106,21 @@
           {/each}
         </div>
 
-        <div class="mt-10 flex flex-wrap items-center gap-4">
+        <!-- Feature strip: trust signals -->
+        <div class="mt-8 flex flex-wrap gap-x-5 gap-y-1.5">
+          {#each [
+            'Free to use',
+            'No account needed',
+            'Backup & restore',
+            'Export as Markdown',
+          ] as feat}
+            <span class="text-xs text-base-content/50 flex items-center gap-1">
+              <span class="text-success font-bold">✓</span>{feat}
+            </span>
+          {/each}
+        </div>
+
+        <div class="mt-8 flex flex-wrap items-center gap-4">
           <button
             class="text-xs text-base-content/40 hover:text-base-content/70 transition-colors text-left"
             onclick={() => showPrivacyPopover = true}
