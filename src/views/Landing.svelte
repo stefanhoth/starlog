@@ -3,6 +3,7 @@
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { navigate } from '../lib/stores/view';
   import { isEngineReady } from '../lib/local';
+  import { canUseLocalLlm } from '../lib/ai-capabilities';
   import { GEMINI_MODELS, type GeminiModel, type AiProvider } from '../lib/types';
   import { parseBackup, applyImport, type BackupBundle } from '../lib/backup';
   import { buildSettingsPatch } from '../lib/ai-settings';
@@ -12,6 +13,7 @@
   import { CHANGELOG } from '../lib/changelog';
 
   const recentChanges = CHANGELOG.flatMap(e => e.changes).slice(0, 3);
+  const localCapability = canUseLocalLlm();
 
   let apiKey = $state($settingsStore.apiKey ?? '');
   let selectedModel = $state<GeminiModel>($settingsStore.geminiModel ?? 'gemini-2.5-flash');
@@ -240,6 +242,13 @@
               />
             </label>
           </div>
+        {/if}
+
+        {#if localCapability === 'unsupported'}
+          <p class="text-xs text-base-content/40 text-center leading-relaxed">
+            💡 <strong class="font-medium text-base-content/50">Prefer no key?</strong>
+            Local AI mode runs entirely in your browser with no account needed — available in Chrome 137+, Edge 137+, and Opera 121+.
+          </p>
         {/if}
       </div>
 
