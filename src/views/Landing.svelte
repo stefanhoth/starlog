@@ -3,6 +3,7 @@
   import { jobProfilesStore } from '../lib/stores/jobProfiles';
   import { navigate } from '../lib/stores/view';
   import { isEngineReady } from '../lib/local';
+  import { canUseLocalLlm } from '../lib/ai-capabilities';
   import { GEMINI_MODELS, type GeminiModel, type AiProvider } from '../lib/types';
   import { parseBackup, applyImport, type BackupBundle } from '../lib/backup';
   import { buildSettingsPatch } from '../lib/ai-settings';
@@ -12,6 +13,7 @@
   import { CHANGELOG } from '../lib/changelog';
 
   const recentChanges = CHANGELOG.flatMap(e => e.changes).slice(0, 3);
+  const localCapability = canUseLocalLlm();
 
   let apiKey = $state($settingsStore.apiKey ?? '');
   let selectedModel = $state<GeminiModel>($settingsStore.geminiModel ?? 'gemini-2.5-flash');
@@ -71,6 +73,23 @@
   let showPrivacyPopover = $state(false);
   let showHowItWorks = $state(false);
   let showChangelog = $state(false);
+
+  // ── Scroll cue ─────────────────────────────────────────────────────
+  // Hide the cue once the STAR section scrolls into view.
+  let starSectionRef = $state<HTMLElement | null>(null);
+  let starVisible = $state(false);
+  let reducedMotion = $state(
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+
+  $effect(() => {
+    if (!starSectionRef) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) starVisible = true;
+    }, { threshold: 0.1 });
+    observer.observe(starSectionRef);
+    return () => observer.disconnect();
+  });
 </script>
 
 <div class="min-h-screen bg-base-100 flex flex-col">
@@ -81,7 +100,7 @@
     <div class="flex flex-col px-8 lg:px-16 xl:px-24">
 
       <!-- Hero: tagline + 3-step flow -->
-      <div class="flex flex-col justify-center py-14 lg:min-h-screen">
+      <div class="relative flex flex-col justify-center py-14 lg:min-h-screen">
         <div class="mb-10">
           <Brand size="lg" />
         </div>
@@ -106,7 +125,21 @@
           {/each}
         </div>
 
-        <div class="mt-10 flex flex-wrap items-center gap-4">
+        <!-- Feature strip: trust signals -->
+        <div class="mt-8 flex flex-wrap gap-x-5 gap-y-1.5">
+          {#each [
+            'Free to use',
+            'No account needed',
+            'Backup & restore',
+            'Export as Markdown',
+          ] as feat}
+            <span class="text-xs text-base-content/50 flex items-center gap-1">
+              <span class="text-success font-bold">✓</span>{feat}
+            </span>
+          {/each}
+        </div>
+
+        <div class="mt-8 flex flex-wrap items-center gap-4">
           <button
             class="text-xs text-base-content/40 hover:text-base-content/70 transition-colors text-left"
             onclick={() => showPrivacyPopover = true}
@@ -120,27 +153,36 @@
             How it works →
           </button>
         </div>
+
+        <!-- Scroll cue — desktop only, hidden once STAR section is reached -->
+        {#if !starVisible}
+          <div class="hidden lg:flex absolute bottom-6 left-0 right-0 justify-center" aria-hidden="true">
+            <span class="text-base-content/25 text-xl {reducedMotion ? '' : 'animate-bounce'}">↓</span>
+          </div>
+        {/if}
       </div>
 
-      <!-- Below the fold: STAR explainer -->
-      <div class="pb-14 lg:pb-20 max-w-md">
-        <h2 class="text-lg font-semibold">What is a STAR story?</h2>
-        <p class="text-sm text-base-content/50 mt-1 mb-4">A simple structure that turns any experience into a clear, compelling answer.</p>
-        <div class="grid grid-cols-4 gap-3">
-          {#each [
-            { l: 'S', w: 'Situation', d: 'set the scene' },
-            { l: 'T', w: 'Task',      d: 'your job' },
-            { l: 'A', w: 'Action',    d: 'what YOU did' },
-            { l: 'R', w: 'Result',    d: 'what changed' },
-          ] as item}
-            <div class="text-center">
-              <div class="w-8 h-8 mx-auto rounded-lg bg-primary text-primary-content font-bold text-sm flex items-center justify-center mb-1">
-                {item.l}
+      <!-- Below the fold: STAR explainer (contrasting section) -->
+      <div class="pb-14 lg:pb-20" bind:this={starSectionRef}>
+        <div class="bg-base-200 rounded-2xl p-6 lg:p-8 max-w-md">
+          <h2 class="text-lg font-semibold">What is a STAR story?</h2>
+          <p class="text-sm text-base-content/50 mt-1 mb-5">A simple structure that turns any experience into a clear, compelling answer.</p>
+          <div class="grid grid-cols-4 gap-3">
+            {#each [
+              { l: 'S', w: 'Situation', d: 'set the scene' },
+              { l: 'T', w: 'Task',      d: 'your job' },
+              { l: 'A', w: 'Action',    d: 'what YOU did' },
+              { l: 'R', w: 'Result',    d: 'what changed' },
+            ] as item}
+              <div class="text-center">
+                <div class="w-8 h-8 mx-auto rounded-lg bg-primary text-primary-content font-bold text-sm flex items-center justify-center mb-1">
+                  {item.l}
+                </div>
+                <div class="text-xs font-semibold">{item.w}</div>
+                <div class="text-xs text-base-content/40">{item.d}</div>
               </div>
-              <div class="text-xs font-semibold">{item.w}</div>
-              <div class="text-xs text-base-content/40">{item.d}</div>
-            </div>
-          {/each}
+            {/each}
+          </div>
         </div>
       </div>
 
@@ -226,6 +268,13 @@
               />
             </label>
           </div>
+        {/if}
+
+        {#if localCapability === 'unsupported'}
+          <p class="text-xs text-base-content/40 text-center leading-relaxed">
+            💡 <strong class="font-medium text-base-content/50">Prefer no key?</strong>
+            Local AI mode runs entirely in your browser with no account needed — available in Chrome 137+, Edge 137+, and Opera 121+.
+          </p>
         {/if}
       </div>
 

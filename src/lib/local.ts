@@ -41,16 +41,16 @@ Leadership, Delivery, Conflict, Ambiguity, Influence, Technical Depth, Customer 
 Growth/Learning, Hiring, Stakeholder Management, Cross-functional Collaboration, Manager of Managers`;
 
 const LOCAL_INSPIRATION_PROMPT = (competency: string) =>
-  `You are helping a professional recall real work experiences for job interviews.
-Generate exactly 3 short, punchy questions for the competency: "${competency}".
+  `You are helping a professional recall specific real work experiences for behavioural job interviews.
+Generate exactly 3 distinct questions to spark a concrete memory about: "${competency}".
 
 Rules:
-- Max 12 words per question
-- Start with "When", "What", "How", or an action verb — never "Tell me about a time"
-- Vary the angle: one about people/team dynamics, one about a challenge or failure, one about outcome or impact
-- Plain conversational language, no corporate jargon
+- Each question MUST open with one of these openers (vary them, do not repeat): "Tell me about a time when", "Did you ever face a situation where", "Walk me through a moment when", "Describe a time when"
+- Be specific enough to trigger a real memory — not "Tell me about a challenge" but something like "Tell me about a time when a project you owned was at risk of missing a deadline — what did you do?"
+- Vary the angle: one about people or team dynamics, one about pressure, failure, or conflict, one about outcome or measurable impact
+- 1–2 sentences max, conversational language, no jargon
 
-Respond with a JSON array of exactly 3 strings. No markdown, no extra keys.`;
+Respond with a JSON array of exactly 3 strings. No markdown, no explanation.`;
 
 // ── Engine singleton ──────────────────────────────────────────────────────────
 
