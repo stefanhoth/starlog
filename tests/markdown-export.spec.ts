@@ -337,12 +337,24 @@ test.describe('bulk export', () => {
 
   test('Escape closes the dropdown and returns focus to the trigger', async ({ page }) => {
     await openDataWithStories(page, [makeBulkStory({ title: 'Alpha', rank: 1 })]);
-    await page.getByTestId('bulk-export-btn').click();
+    const trigger = page.getByTestId('bulk-export-btn');
+    const dropdown = page.getByTestId('bulk-export-dropdown');
+
+    await trigger.click();
+    await expect(dropdown).toHaveAttribute('open', '');
     await expect(page.getByTestId('bulk-export-download-btn')).toBeVisible();
+
     // Use locator.press() to ensure focus is explicitly on the summary before firing
     // Escape — page.keyboard.press() targets ambient focus which differs across browsers.
-    await page.getByTestId('bulk-export-btn').press('Escape');
+    await trigger.press('Escape');
+
+    // Assert on the <details> `open` state — the source of truth the handler mutates —
+    // rather than relying solely on child-button visibility, which also depends on the
+    // UA stylesheet's child-hiding timing and was the surface of the #225 flake.
+    await expect(dropdown).not.toHaveAttribute('open');
     await expect(page.getByTestId('bulk-export-download-btn')).not.toBeVisible();
+    // The handler returns focus to the trigger; assert it (the test name promises this).
+    await expect(trigger).toBeFocused();
   });
 
   test('copy failure is announced to screen readers via aria-live', async ({ page }) => {
