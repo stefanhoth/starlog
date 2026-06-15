@@ -74,7 +74,7 @@
     isGenerating = true;
     genError = '';
     try {
-      const newQs = await dispatchGenerateInspirationQuestions(activeCompetency);
+      const newQs = await dispatchGenerateInspirationQuestions(activeCompetency, generatedQuestions);
       generatedQuestions = newQs;
       questionIndex = 0;
     } catch (err) {
