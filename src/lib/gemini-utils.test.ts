@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GeminiError, toGeminiError, parseJson, assertStoryDraft } from './gemini-utils';
+import { GeminiError, toGeminiError, parseJson, assertStoryDraft, buildInspirationPrompt } from './gemini-utils';
 
 // ── toGeminiError ─────────────────────────────────────────────────────────────
 
@@ -173,5 +173,85 @@ describe('assertStoryDraft', () => {
     let caught: unknown;
     try { assertStoryDraft(null); } catch (e) { caught = e; }
     expect((caught as GeminiError).retryable).toBe(true);
+  });
+});
+
+// ── buildInspirationPrompt ────────────────────────────────────────────────────
+
+describe('buildInspirationPrompt', () => {
+  const OPENERS = [
+    'Tell me about a time when',
+    'Did you ever face a situation where',
+    'Walk me through a moment when',
+    'Describe a time when',
+  ];
+
+  it('uses behavioural-interview framing, not the old short/generic style', () => {
+    const prompt = buildInspirationPrompt('Leadership');
+    // New behavioural framing (#221/#226)
+    expect(prompt).toContain('behavioural job interviews');
+    expect(prompt).toContain('spark a concrete memory');
+    // The old framing must be gone — this is what #226 aligns the cloud prompt away from.
+    expect(prompt).not.toContain('Max 12 words');
+    expect(prompt).not.toContain('never "Tell me about a time"');
+    expect(prompt).not.toContain('short, punchy');
+  });
+
+  it('lists all four behavioural openers', () => {
+    const prompt = buildInspirationPrompt('Delivery');
+    for (const opener of OPENERS) {
+      expect(prompt).toContain(opener);
+    }
+  });
+
+  it('asks for exactly 3 distinct questions as a JSON array', () => {
+    const prompt = buildInspirationPrompt('Conflict');
+    expect(prompt).toContain('exactly 3 distinct questions');
+    expect(prompt).toContain('JSON array of exactly 3 strings');
+  });
+
+  it('includes a concrete example so questions trigger a real memory', () => {
+    const prompt = buildInspirationPrompt('Ambiguity');
+    expect(prompt).toContain('specific enough to trigger a real memory');
+    expect(prompt).toContain('at risk of missing a deadline');
+  });
+
+  it('interpolates the competency into the prompt', () => {
+    expect(buildInspirationPrompt('Stakeholder Management')).toContain('"Stakeholder Management"');
+  });
+
+  it('omits the avoid-repeats clause when no previous questions are given', () => {
+    const prompt = buildInspirationPrompt('Leadership');
+    expect(prompt).not.toContain('Do NOT repeat');
+  });
+
+  it('omits the avoid-repeats clause for an empty previous-questions array', () => {
+    expect(buildInspirationPrompt('Leadership', [])).not.toContain('Do NOT repeat');
+  });
+
+  it('adds the avoid-repeats clause listing each previous question on regenerate', () => {
+    const previous = [
+      'Tell me about a time when you led a reluctant team.',
+      'Describe a time when you resolved a conflict.',
+    ];
+    const prompt = buildInspirationPrompt('Leadership', previous);
+    expect(prompt).toContain('Do NOT repeat or closely paraphrase');
+    for (const q of previous) {
+      expect(prompt).toContain(`  • ${q}`);
+    }
+  });
+
+  it('sanitises backticks and double quotes out of the competency', () => {
+    const prompt = buildInspirationPrompt('`danger" injection`');
+    expect(prompt).toContain('danger injection');
+    expect(prompt).not.toContain('`danger');
+    expect(prompt).not.toContain('injection`');
+  });
+
+  it('caps an over-long competency at 100 characters', () => {
+    const longComp = 'A'.repeat(500);
+    const prompt = buildInspirationPrompt(longComp);
+    expect(prompt).toContain('A'.repeat(100));
+    expect(prompt).not.toContain('A'.repeat(101));
   });
 });

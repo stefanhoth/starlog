@@ -1,5 +1,5 @@
 import type { StoryDraft, LocalModelCapabilities } from './types';
-import { GeminiError, parseJson, assertStoryDraft } from './gemini-utils';
+import { GeminiError, parseJson, assertStoryDraft, buildInspirationPrompt } from './gemini-utils';
 
 // Prompts are simplified versions tuned for smaller local models.
 // Per-provider prompt tuning (few-shot examples, quality constraints) is deferred to M6.
@@ -39,22 +39,6 @@ Example: ["Leadership", "Delivery", "Conflict", "Ambiguity", "Stakeholder Manage
 Choose from or rephrase into terms from this list where applicable:
 Leadership, Delivery, Conflict, Ambiguity, Influence, Technical Depth, Customer Focus,
 Growth/Learning, Hiring, Stakeholder Management, Cross-functional Collaboration, Manager of Managers`;
-
-const LOCAL_INSPIRATION_PROMPT = (competency: string, previousQuestions: string[]) => {
-  const avoidClause = previousQuestions.length > 0
-    ? `\n- Do NOT repeat or closely paraphrase any of these questions already shown:\n${previousQuestions.map(q => `  • ${q}`).join('\n')}`
-    : '';
-  return `You are helping a professional recall specific real work experiences for behavioural job interviews.
-Generate exactly 3 distinct questions to spark a concrete memory about: "${competency}".
-
-Rules:
-- Each question MUST open with one of these openers (vary them, do not repeat): "Tell me about a time when", "Did you ever face a situation where", "Walk me through a moment when", "Describe a time when"
-- Be specific enough to trigger a real memory — not "Tell me about a challenge" but something like "Tell me about a time when a project you owned was at risk of missing a deadline — what did you do?"
-- Vary the angle: one about people or team dynamics, one about pressure, failure, or conflict, one about outcome or measurable impact
-- 1–2 sentences max, conversational language, no jargon${avoidClause}
-
-Respond with a JSON array of exactly 3 strings. No markdown, no explanation.`;
-};
 
 // ── Engine singleton ──────────────────────────────────────────────────────────
 
@@ -185,9 +169,8 @@ export async function generateInspirationQuestions(
   competency: string,
   previousQuestions: string[] = [],
 ): Promise<string[]> {
-  const safeComp = competency.slice(0, 100).replace(/[`"]/g, '');
   const raw = await streamToString(
-    LOCAL_INSPIRATION_PROMPT(safeComp, previousQuestions),
+    buildInspirationPrompt(competency, previousQuestions),
     'Generate the questions now.',
     0.8,
   );

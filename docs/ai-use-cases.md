@@ -7,9 +7,12 @@ All Gemini access is client-side via `@google/generative-ai`, using the **user's
 (free tier is common — rate limits and latency are real constraints). There is no backend; all
 robustness lives in the prompt, the request config, and the parser.
 
-All prompts are currently inline string constants in `src/lib/gemini.ts`. There is **no**
-`src/lib/prompts/` directory — the "prompt templates" are the `STAR_PROMPT`, `COMPETENCY_PROMPT`,
-and the inline prompts inside `generateInspirationQuestions`.
+Most prompts are inline string constants in `src/lib/gemini.ts` (`STAR_PROMPT`, `COMPETENCY_PROMPT`).
+The **inspiration-question** prompt is the exception: it lives in a single shared builder,
+`buildInspirationPrompt(competency, previousQuestions)` in `src/lib/gemini-utils.ts`, consumed by
+**both** the cloud (`gemini.ts`) and local (`local.ts`) providers so the two can't drift apart
+(see #216/#221/#226). The STAR prompts are intentionally *not* shared — `local.ts` keeps a simplified
+`LOCAL_STAR_PROMPT` tuned for smaller models.
 
 ## Table of Contents
 
@@ -81,10 +84,10 @@ All located in `src/lib/gemini.ts`:
 
 | Field | Detail |
 |-------|--------|
-| **What it does** | Generates 3 short, punchy interview-style prompt questions for a given competency, to help the user recall a real experience to capture. |
-| **Entry point** | `src/views/Capture.svelte` → `generateQuestions()` (the "regenerate"/AI-questions affordance). Output replaces the static fallback list. |
-| **Function / file** | `generateInspirationQuestions(competency: string)` in `src/lib/gemini.ts`. |
-| **Prompt type** | Inline prompt, **creative mode** (`getModel(true)` → `temperature 0.8`, **no JSON MIME type**). Asks for a JSON array of exactly 3 strings. The competency is `slice(0,100)` and stripped of `` ` `` and `"` before interpolation (light injection hardening). |
+| **What it does** | Generates 3 behavioural-interview-style prompt questions for a given competency (each opens with "Tell me about a time when…" etc., concrete enough to trigger a real memory), to help the user recall a real experience to capture. |
+| **Entry point** | `src/views/Capture.svelte` → `generateQuestions()` (the "regenerate"/AI-questions affordance). Output replaces the static fallback list. Already-shown questions are passed back on regenerate so the model avoids repeats. |
+| **Function / file** | `generateInspirationQuestions(competency: string, previousQuestions?: string[])` in `src/lib/gemini.ts` (cloud) and `src/lib/local.ts` (local), both delegating to the shared `buildInspirationPrompt()` in `src/lib/gemini-utils.ts`. |
+| **Prompt type** | Shared builder, **creative mode** (`getModel(true)` → `temperature 0.8`, **no JSON MIME type**). Asks for a JSON array of exactly 3 strings. The competency is `slice(0,100)` and stripped of `` ` `` and `"` inside the builder (light injection hardening). |
 | **Output shape** | `string[]` (expected length 3). |
 | **Failure mode** | `parseJson<string[]>` throws (retryable) on non-JSON. **Note:** because creative mode does not set `responseMimeType: 'application/json'`, this call is the most likely to return prose or fenced text — it leans entirely on the prompt + fence-stripping. There is **no shape assertion**: a parsed-but-wrong value (e.g. `[]`, or non-strings) would pass through. On final failure, `Capture.svelte` sets `genError`; the static `PROMPTS` fallback in `src/lib/inspiration.ts` continues to display, so the feature degrades gracefully to canned questions. |
 | **Quality notes** | This is a **nice-to-have, not load-bearing** — `src/lib/inspiration.ts` already provides 3 hand-written questions per canonical competency as the default, and `Capture.svelte` only swaps in AI questions when `generatedQuestions.length > 0`. Inconsistency risk: creative mode + no schema + no length/type check is the weakest-validated call in the app. Consider switching to JSON mode and asserting `length === 3 && every(string)`. |
