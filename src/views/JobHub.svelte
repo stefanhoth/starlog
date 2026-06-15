@@ -135,6 +135,13 @@
 
 <div class="p-6 max-w-2xl mx-auto" data-testid="job-hub-view">
 
+  <!-- Mobile-only link to the cross-job overview (desktop reaches it via the sidebar) -->
+  <button
+    class="md:hidden mb-3 flex items-center gap-1 text-sm text-base-content/60 hover:text-base-content transition-colors"
+    onclick={() => navigate('dashboard')}
+    data-testid="jobhub-dashboard-link"
+  >📊 Jobs overview</button>
+
   <!-- Header -->
   <div class="flex items-start justify-between mb-6">
     <div>

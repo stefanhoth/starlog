@@ -15,7 +15,9 @@
   import Review from './views/Review.svelte';
   import StoryDetail from './views/StoryDetail.svelte';
   import JobHub from './views/JobHub.svelte';
+  import Dashboard from './views/Dashboard.svelte';
   import StoryBank from './views/StoryBank.svelte';
+  import { coveragePct } from './lib/coverage';
   import InterviewMode from './views/InterviewMode.svelte';
   import Data from './views/Data.svelte';
   import WhatsNewPanel from './lib/components/WhatsNewPanel.svelte';
@@ -42,15 +44,6 @@
       openJob(profiles[0].id);
     }
   });
-
-  function coveragePct(profile: JobProfile): number {
-    const total = profile.extractedCompetencies.length;
-    if (total === 0) return 0;
-    const covered = profile.extractedCompetencies.filter(
-      c => (profile.competencyMap[c] ?? []).length > 0
-    ).length;
-    return Math.round((covered / total) * 100);
-  }
 
   let mainEl = $state<HTMLElement | null>(null);
 
@@ -294,6 +287,17 @@
 
         <button
           class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors
+            {$currentView === 'dashboard'
+              ? 'bg-base-200 text-base-content font-medium'
+              : 'text-base-content/60 hover:bg-base-200 hover:text-base-content'}"
+          onclick={() => navigate('dashboard')}
+          data-testid="nav-dashboard"
+        >
+          <span class="w-5 shrink-0 text-center">📊</span>Jobs overview
+        </button>
+
+        <button
+          class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors
             {$currentView === 'story-bank'
               ? 'bg-base-200 text-base-content font-medium'
               : 'text-base-content/60 hover:bg-base-200 hover:text-base-content'}"
@@ -361,6 +365,8 @@
     <main class="flex-1 overflow-y-auto bg-base-200 pb-16 md:pb-0" data-testid="main-content" bind:this={mainEl}>
       {#if $currentView === 'job-hub'}
         <JobHub />
+      {:else if $currentView === 'dashboard'}
+        <Dashboard />
       {:else if $currentView === 'gap-fill'}
         <Capture />
       {:else if $currentView === 'story-bank'}
