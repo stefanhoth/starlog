@@ -41,9 +41,10 @@
   let copyTimer: ReturnType<typeof setTimeout>;
   let summary: HTMLElement | undefined = $state();
 
-  // Outside-click closes the menu. Escape is handled via onkeydown on <details>
-  // so it's synchronously registered — a $effect-registered document listener
-  // runs after the DOM update and can miss the keydown if pressed immediately.
+  // Outside-click closes the menu. Escape is handled via <svelte:window> in the
+  // markup — declaratively registered (no post-render $effect gap that could miss
+  // an immediate keypress) and, unlike a listener on the non-interactive <details>,
+  // it doesn't trip the a11y_no_noninteractive_element_interactions warning.
   $effect(() => {
     if (!open) return;
     function onDocClick(e: MouseEvent) {
@@ -83,10 +84,12 @@
   }
 </script>
 
+<svelte:window onkeydown={handleEscape} />
+
 {#if disabled}
   <button class="{triggerClass} shrink-0" disabled title={disabledTitle} data-testid="{testidPrefix}-btn">Export ▾</button>
 {:else}
-  <details bind:open class="relative shrink-0" data-testid="{testidPrefix}-dropdown" onkeydown={handleEscape}>
+  <details bind:open class="relative shrink-0" data-testid="{testidPrefix}-dropdown">
     <summary bind:this={summary} class="{triggerClass} list-none cursor-pointer" data-testid="{testidPrefix}-btn">
       {#if copyStatus === 'ok'}{copiedLabel}{:else if copyStatus === 'error'}Copy failed{:else}Export ▾{/if}
     </summary>
