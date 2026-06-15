@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { flushSync } from 'svelte';
   import { downloadMarkdown } from '../markdown';
 
   interface Props {
@@ -49,7 +50,7 @@
       if (details && !details.contains(e.target as Node)) open = false;
     }
     function onKeydown(e: KeyboardEvent) {
-      if (e.key === 'Escape') { open = false; summary?.focus(); }
+      if (e.key === 'Escape') { flushSync(() => { open = false; }); summary?.focus(); }
     }
     document.addEventListener('click', onDocClick, { capture: true });
     document.addEventListener('keydown', onKeydown);
