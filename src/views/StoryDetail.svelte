@@ -3,8 +3,9 @@
   import { navigate } from '../lib/stores/view';
   import { COMPETENCIES } from '../lib/competencies';
   import StarEditor from '../lib/components/StarEditor.svelte';
+  import ExportMenu from '../lib/components/ExportMenu.svelte';
   import type { StoryQuality } from '../lib/types';
-  import { storyToMarkdown, slugifyTitle, downloadMarkdown } from '../lib/markdown';
+  import { storyToMarkdown, slugifyTitle } from '../lib/markdown';
   import type { Story } from '../lib/types';
 
   const storyId = sessionStorage.getItem('starlog_active_story') ?? '';
@@ -25,10 +26,6 @@
   let showTagPicker     = $state(false);
   let showDeleteConfirm = $state(false);
   let starEditor: { commitPending: () => void } | undefined = $state();
-  let exportOpen        = $state(false);
-  let copyStatus        = $state<'idle' | 'ok' | 'error'>('idle');
-  let copyTimer: ReturnType<typeof setTimeout>;
-  let exportSummary: HTMLElement | undefined = $state();
 
   function currentStorySnapshot(): Story {
     starEditor?.commitPending();
@@ -44,43 +41,6 @@
       createdAt: original?.createdAt ?? new Date().toISOString(),
       updatedAt: original?.updatedAt ?? new Date().toISOString(),
     };
-  }
-
-  $effect(() => {
-    if (!exportOpen) return;
-    function onDocClick(e: MouseEvent) {
-      const details = exportSummary?.closest('details');
-      if (details && !details.contains(e.target as Node)) exportOpen = false;
-    }
-    function onKeydown(e: KeyboardEvent) {
-      if (e.key === 'Escape') { exportOpen = false; exportSummary?.focus(); }
-    }
-    document.addEventListener('click', onDocClick, { capture: true });
-    document.addEventListener('keydown', onKeydown);
-    return () => {
-      document.removeEventListener('click', onDocClick, { capture: true });
-      document.removeEventListener('keydown', onKeydown);
-    };
-  });
-
-  async function handleCopy() {
-    exportOpen = false;
-    exportSummary?.focus();
-    clearTimeout(copyTimer);
-    try {
-      await navigator.clipboard.writeText(storyToMarkdown(currentStorySnapshot()));
-      copyStatus = 'ok';
-    } catch {
-      copyStatus = 'error';
-    }
-    copyTimer = setTimeout(() => { copyStatus = 'idle'; }, 2000);
-  }
-
-  function handleDownload() {
-    exportOpen = false;
-    exportSummary?.focus();
-    const snapshot = currentStorySnapshot();
-    downloadMarkdown(`${slugifyTitle(snapshot.title)}-star.md`, storyToMarkdown(snapshot));
   }
 
   // ── Title click-to-edit ───────────────────────────────────────────────
@@ -112,10 +72,6 @@
   }
 </script>
 
-<div aria-live="polite" aria-atomic="true" class="sr-only">
-  {#if copyStatus === 'ok'}Copied to clipboard{:else if copyStatus === 'error'}Copy failed — try Download .md instead{/if}
-</div>
-
 <div class="p-6 max-w-2xl mx-auto" data-testid="story-detail-view">
 
   <!-- Breadcrumb + actions -->
@@ -127,24 +83,10 @@
     </div>
     <div class="flex gap-2 shrink-0 items-center">
       <button class="btn btn-error btn-sm btn-outline" onclick={() => showDeleteConfirm = true} data-testid="delete-btn">Delete</button>
-      <!-- Export dropdown -->
-      <details bind:open={exportOpen} class="relative" data-testid="export-dropdown">
-        <summary bind:this={exportSummary} class="btn btn-ghost btn-sm list-none cursor-pointer" data-testid="export-btn">
-          {#if copyStatus === 'ok'}Copied ✓{:else if copyStatus === 'error'}Copy failed{:else}Export ▾{/if}
-        </summary>
-        <div class="absolute right-0 top-full mt-1 z-10 bg-base-100 border border-base-300 rounded-lg shadow-lg w-48 py-1">
-          <button
-            class="w-full text-left px-3 py-2 text-sm hover:bg-base-200 transition-colors flex items-center gap-2"
-            onclick={handleCopy}
-            data-testid="export-copy-btn"
-          ><span aria-hidden="true">📋</span> Copy to clipboard</button>
-          <button
-            class="w-full text-left px-3 py-2 text-sm hover:bg-base-200 transition-colors flex items-center gap-2"
-            onclick={handleDownload}
-            data-testid="export-download-btn"
-          ><span aria-hidden="true">⬇️</span> Download .md</button>
-        </div>
-      </details>
+      <ExportMenu
+        getContent={() => storyToMarkdown(currentStorySnapshot())}
+        filename={`${slugifyTitle(title.trim() || 'Untitled Story')}-star.md`}
+      />
       <button class="btn btn-primary btn-sm" onclick={() => { if (editingTitle) commitTitle(); else { starEditor?.commitPending(); save(); navigate('story-bank'); } }} data-testid="save-btn">Save</button>
     </div>
   </div>
