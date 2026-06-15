@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
 import { get } from 'svelte/store';
 import { settingsStore } from './stores/settings';
-import { GeminiError, toGeminiError, parseJson, assertStoryDraft } from './gemini-utils';
+import { GeminiError, toGeminiError, parseJson, assertStoryDraft, buildInspirationPrompt } from './gemini-utils';
 
 export { GeminiError } from './gemini-utils';
 
@@ -180,21 +180,7 @@ export async function generateInspirationQuestions(
   previousQuestions: string[] = [],
 ): Promise<string[]> {
   const model = getModel(true);
-
-  const safeComp = competency.slice(0, 100).replace(/[`"]/g, '');
-  const avoidClause = previousQuestions.length > 0
-    ? `\n- Do NOT repeat or closely paraphrase any of these questions already shown:\n${previousQuestions.map(q => `  • ${q}`).join('\n')}`
-    : '';
-  const prompt = `You are helping a professional recall specific real work experiences for behavioural job interviews.
-Generate exactly 3 distinct questions to spark a concrete memory about: "${safeComp}".
-
-Rules:
-- Each question MUST open with one of these openers (vary them, do not repeat): "Tell me about a time when", "Did you ever face a situation where", "Walk me through a moment when", "Describe a time when"
-- Be specific enough to trigger a real memory — not "Tell me about a challenge" but something like "Tell me about a time when a project you owned was at risk of missing a deadline — what did you do?"
-- Vary the angle: one about people or team dynamics, one about pressure, failure, or conflict, one about outcome or measurable impact
-- 1–2 sentences max, conversational language, no jargon${avoidClause}
-
-Respond with a JSON array of exactly 3 strings. No markdown, no explanation.`;
+  const prompt = buildInspirationPrompt(competency, previousQuestions);
 
   return withRetry(async () => {
     const result = await model.generateContent([{ text: prompt }]);
