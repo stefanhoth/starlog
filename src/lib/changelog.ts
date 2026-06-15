@@ -13,6 +13,10 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: 'June 2026',
     changes: [
       {
+        title: 'See all your jobs at a glance',
+        detail: 'A new Jobs overview shows every job\'s competency coverage, when you last worked on it, and a one-tap "Continue mapping" for anything unfinished — so you always know where to pick up. Find it under "Also" in the sidebar, or from the Jobs overview link on mobile.',
+      },
+      {
         title: 'Run AI completely on your device — no key needed',
         detail: 'Local AI mode lets you structure stories and extract job competencies using a model that runs entirely in your browser. Nothing leaves your device. Available now in Chrome 137+, Edge 137+, and Opera 121+ — switch to Local AI in Settings.',
       },
