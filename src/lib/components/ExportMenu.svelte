@@ -41,24 +41,24 @@
   let copyTimer: ReturnType<typeof setTimeout>;
   let summary: HTMLElement | undefined = $state();
 
-  // While open: outside-click and Escape both close the menu and return focus to
-  // the trigger. Native <details> does neither on its own.
+  // Outside-click closes the menu. Escape is handled via onkeydown on <details>
+  // so it's synchronously registered — a $effect-registered document listener
+  // runs after the DOM update and can miss the keydown if pressed immediately.
   $effect(() => {
     if (!open) return;
     function onDocClick(e: MouseEvent) {
       const details = summary?.closest('details');
       if (details && !details.contains(e.target as Node)) open = false;
     }
-    function onKeydown(e: KeyboardEvent) {
-      if (e.key === 'Escape') { flushSync(() => { open = false; }); summary?.focus(); }
-    }
     document.addEventListener('click', onDocClick, { capture: true });
-    document.addEventListener('keydown', onKeydown);
-    return () => {
-      document.removeEventListener('click', onDocClick, { capture: true });
-      document.removeEventListener('keydown', onKeydown);
-    };
+    return () => document.removeEventListener('click', onDocClick, { capture: true });
   });
+
+  function handleEscape(e: KeyboardEvent) {
+    if (e.key !== 'Escape' || !open) return;
+    flushSync(() => { open = false; });
+    summary?.focus();
+  }
 
   // Clear the status-reset timer on unmount to avoid a stale $state write.
   $effect(() => () => clearTimeout(copyTimer));
@@ -86,7 +86,7 @@
 {#if disabled}
   <button class="{triggerClass} shrink-0" disabled title={disabledTitle} data-testid="{testidPrefix}-btn">Export ▾</button>
 {:else}
-  <details bind:open class="relative shrink-0" data-testid="{testidPrefix}-dropdown">
+  <details bind:open class="relative shrink-0" data-testid="{testidPrefix}-dropdown" onkeydown={handleEscape}>
     <summary bind:this={summary} class="{triggerClass} list-none cursor-pointer" data-testid="{testidPrefix}-btn">
       {#if copyStatus === 'ok'}{copiedLabel}{:else if copyStatus === 'error'}Copy failed{:else}Export ▾{/if}
     </summary>
