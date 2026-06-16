@@ -56,8 +56,15 @@
   });
 
   function handleEscape(e: KeyboardEvent) {
-    if (e.key !== 'Escape' || !open) return;
-    flushSync(() => { open = false; });
+    if (e.key !== 'Escape') return;
+    // Read the live DOM, not the `open` state var: native <details> fires its
+    // `toggle` event (which drives bind:open) asynchronously and coalesced, so
+    // after a click the attribute is already set while `open` can still be stale
+    // `false`. Guarding on `open` here dropped the Escape under CI load (#225/#231).
+    const details = summary?.closest('details');
+    if (!details?.open) return;
+    flushSync(() => { open = false; });   // sync-close the state…
+    details.open = false;                 // …and the DOM, in case state was stale.
     summary?.focus();
   }
 
