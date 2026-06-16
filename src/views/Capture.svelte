@@ -221,6 +221,12 @@
     </span>
   </div>
 
+  {#if isLocalMode}
+    <p class="text-sm text-base-content/60 mb-6" data-testid="local-text-only-note">
+      🔒 Audio capture uses the cloud. Local mode is text-only, so nothing leaves your device — type or paste your story below.
+    </p>
+  {/if}
+
   {#if tab === 'record' && !isLocalMode}
     <div class="card bg-base-200 p-6 flex flex-col items-center gap-4">
       <p class="text-base-content/60 text-sm text-center">
