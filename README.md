@@ -132,4 +132,4 @@ Dependency updates are managed by [Renovate](https://docs.renovatebot.com) (week
 
 ## License
 
-MIT
+[GNU General Public License v3.0 or later](LICENSE) (GPL-3.0-or-later). STARlog is free and open source — you're welcome to read, use, and modify the code under the terms of the GPL.
