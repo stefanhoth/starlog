@@ -109,6 +109,12 @@
           <span class="text-primary">powerful stories.</span>
         </h1>
 
+        <div class="mt-5">
+          <span class="badge badge-primary badge-lg gap-1.5 font-semibold" data-testid="free-badge">
+            <span aria-hidden="true">🎉</span> 100% free — forever
+          </span>
+        </div>
+
         <div class="mt-10 flex items-start gap-2 max-w-xl">
           {#each [
             { e: '📝', l: 'Log your experiences' },
@@ -128,7 +134,6 @@
         <!-- Feature strip: trust signals -->
         <div class="mt-8 flex flex-wrap gap-x-5 gap-y-1.5">
           {#each [
-            'Free to use',
             'No account needed',
             'Backup & restore',
             'Export as Markdown',
@@ -297,6 +302,25 @@
       {/if}
     </div>
   </div>
+
+  <!-- Footer: open-source signal -->
+  <footer class="footer footer-center bg-base-200 border-t border-base-300 px-8 py-6 text-xs text-base-content/50">
+    <p class="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
+      <span aria-hidden="true">⭐</span>
+      <span>STARlog is free and open source.</span>
+      <a
+        href="https://github.com/stefanhoth/starlog"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="View the STARlog source code on GitHub (opens in a new tab)"
+        class="link link-hover text-primary/80 hover:text-primary font-medium inline-flex items-center gap-1 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        data-testid="github-link"
+      >
+        View the code on GitHub
+        <span aria-hidden="true">↗</span>
+      </a>
+    </p>
+  </footer>
 
 </div>
 
