@@ -164,44 +164,6 @@ test('profile entry: competency header visible', async ({ page }) => {
   await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
 });
 
-test('profile entry: arrow down/up navigates between competency groups', async ({ page }) => {
-  const s1 = makeStory({ id: 'story-1', title: 'Story A' });
-  const s2 = makeStory({ id: 'story-2', title: 'Story B' });
-  const profile = makeProfile({
-    [COMPETENCY_FIXTURE[0]]: ['story-1'],
-    [COMPETENCY_FIXTURE[1]]: ['story-2'],
-  });
-  await seedAndOpenInterview(page, { stories: [s1, s2], profile, mode: 'profile' });
-
-  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
-  await expect(page.getByTestId('interview-story-title')).toHaveText('Story A');
-
-  await page.keyboard.press('ArrowDown');
-  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[1]);
-  await expect(page.getByTestId('interview-story-title')).toHaveText('Story B');
-
-  await page.keyboard.press('ArrowUp');
-  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
-});
-
-test('profile entry: competencies with no mapped stories are skipped', async ({ page }) => {
-  // Only map story to competency[0] and competency[2], skip [1], [3], [4]
-  const s1 = makeStory({ id: 'story-1', title: 'Story Alpha' });
-  const s2 = makeStory({ id: 'story-2', title: 'Story Gamma' });
-  const profile = makeProfile({
-    [COMPETENCY_FIXTURE[0]]: ['story-1'],
-    // COMPETENCY_FIXTURE[1] intentionally unmapped
-    [COMPETENCY_FIXTURE[2]]: ['story-2'],
-  });
-  await seedAndOpenInterview(page, { stories: [s1, s2], profile, mode: 'profile' });
-
-  // First group
-  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
-  // ArrowDown should jump straight to COMPETENCY_FIXTURE[2], skipping [1]
-  await page.keyboard.press('ArrowDown');
-  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[2]);
-});
-
 test('profile entry: launch pad offers exactly three modes, no Live', async ({ page }) => {
   const story = makeStory({ id: 'story-1' });
   const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['story-1'] });
@@ -296,6 +258,189 @@ test('launch pad (library mode): ESC exits to story bank', async ({ page }) => {
 
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('story-bank-view')).toBeVisible();
+});
+
+// ─── Navigation: linear traversal ──────────────────────────────────────────
+
+// Enter Mock interview (train-question submode) for a seeded profile.
+async function seedAndOpenMock(
+  page: import('@playwright/test').Page,
+  { stories, profile }: { stories: Story[]; profile: JobProfile }
+) {
+  const { clearStorage } = await import('./helpers');
+  await page.goto('/');
+  await clearStorage(page);
+  await page.route('**/generativelanguage.googleapis.com/**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) })
+  );
+  await page.evaluate(
+    ({ s, p }) => {
+      localStorage.setItem('starlog_settings', JSON.stringify({ apiKey: 'AIzaTestKey123', consentGiven: true }));
+      localStorage.setItem('starlog_stories', JSON.stringify(s));
+      localStorage.setItem('starlog_job_profiles', JSON.stringify([p]));
+      sessionStorage.setItem('starlog_active_profile', p.id);
+    },
+    { s: stories, p: profile }
+  );
+  await page.reload();
+  await expect(page.getByTestId('job-hub-view')).toBeVisible();
+  await page.getByTestId('start-interview-btn').click();
+  await expect(page.getByTestId('interview-view')).toBeVisible();
+  await page.getByTestId('mode-train-question').click();
+  await expect(page.getByTestId('interview-view')).toBeVisible();
+}
+
+test('nav: → crosses competency boundary in Flash cards', async ({ page }) => {
+  const s1 = makeStory({ id: 'nav-1', title: 'Story A' });
+  const s2 = makeStory({ id: 'nav-2', title: 'Story B' });
+  const profile = makeProfile({
+    [COMPETENCY_FIXTURE[0]]: ['nav-1'],
+    [COMPETENCY_FIXTURE[1]]: ['nav-2'],
+  });
+  await seedAndOpenInterview(page, { stories: [s1, s2], profile, mode: 'profile' });
+
+  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story A');
+
+  // → from the last story of group 1 advances to the first story of group 2,
+  // it must NOT wrap back to story 1 of group 1.
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story B');
+  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[1]);
+});
+
+test('nav: ← crosses boundary backwards in Flash cards', async ({ page }) => {
+  const s1 = makeStory({ id: 'navb-1', title: 'Story A' });
+  const s2 = makeStory({ id: 'navb-2', title: 'Story B' });
+  const profile = makeProfile({
+    [COMPETENCY_FIXTURE[0]]: ['navb-1'],
+    [COMPETENCY_FIXTURE[1]]: ['navb-2'],
+  });
+  await seedAndOpenInterview(page, { stories: [s1, s2], profile, mode: 'profile' });
+
+  // Advance into group 2…
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story B');
+  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[1]);
+
+  // …then ← should step back across the boundary to story 1 / comp 1.
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story A');
+  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
+});
+
+test('nav: → at deck end stays on last story (no wrap)', async ({ page }) => {
+  const s1 = makeStory({ id: 'end-1', title: 'Story A' });
+  const s2 = makeStory({ id: 'end-2', title: 'Story B' });
+  // Both stories in a single competency group.
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['end-1', 'end-2'] });
+  await seedAndOpenInterview(page, { stories: [s1, s2], profile, mode: 'profile' });
+
+  await expect(page.getByText('1 / 2')).toBeVisible();
+
+  await page.keyboard.press('ArrowRight'); // → 2 / 2
+  await expect(page.getByText('2 / 2')).toBeVisible();
+
+  await page.keyboard.press('ArrowRight'); // past the end: must stay at 2 / 2
+  await expect(page.getByText('2 / 2')).toBeVisible();
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story B');
+});
+
+test('nav: ← at deck start stays on first story', async ({ page }) => {
+  const s1 = makeStory({ id: 'start-1', title: 'Story A' });
+  const s2 = makeStory({ id: 'start-2', title: 'Story B' });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['start-1', 'start-2'] });
+  await seedAndOpenInterview(page, { stories: [s1, s2], profile, mode: 'profile' });
+
+  await expect(page.getByText('1 / 2')).toBeVisible();
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story A');
+
+  // ← on the very first story must not wrap to the end.
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.getByText('1 / 2')).toBeVisible();
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story A');
+});
+
+test('nav: position counter advances truthfully across groups', async ({ page }) => {
+  const a1 = makeStory({ id: 'pos-a1', title: 'A One' });
+  const a2 = makeStory({ id: 'pos-a2', title: 'A Two' });
+  const b1 = makeStory({ id: 'pos-b1', title: 'B One' });
+  const profile = makeProfile({
+    [COMPETENCY_FIXTURE[0]]: ['pos-a1', 'pos-a2'],
+    [COMPETENCY_FIXTURE[1]]: ['pos-b1'],
+  });
+  await seedAndOpenInterview(page, { stories: [a1, a2, b1], profile, mode: 'profile' });
+
+  await expect(page.getByText('1 / 3')).toBeVisible();
+  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
+
+  await page.keyboard.press('ArrowRight'); // 2 / 3, still comp A
+  await expect(page.getByText('2 / 3')).toBeVisible();
+  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
+
+  await page.keyboard.press('ArrowRight'); // 3 / 3, now comp B
+  await expect(page.getByText('3 / 3')).toBeVisible();
+  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[1]);
+});
+
+test('nav: ↑/↓ no longer change story in Flash cards', async ({ page }) => {
+  const s1 = makeStory({ id: 'ud-1', title: 'Story A' });
+  const s2 = makeStory({ id: 'ud-2', title: 'Story B' });
+  const profile = makeProfile({
+    [COMPETENCY_FIXTURE[0]]: ['ud-1'],
+    [COMPETENCY_FIXTURE[1]]: ['ud-2'],
+  });
+  await seedAndOpenInterview(page, { stories: [s1, s2], profile, mode: 'profile' });
+
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story A');
+  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
+
+  await page.keyboard.press('ArrowDown');
+  // Give any (erroneous) handler a chance to run, then confirm nothing moved.
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story A');
+  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
+
+  await page.keyboard.press('ArrowUp');
+  await expect(page.getByTestId('interview-story-title')).toHaveText('Story A');
+  await expect(page.getByTestId('competency-header')).toHaveText(COMPETENCY_FIXTURE[0]);
+});
+
+test('nav: Mock interview → before reveal does nothing', async ({ page }) => {
+  const story = makeStory({ id: 'mock-1', title: 'Mock Story' });
+  const profile = makeProfile({ [COMPETENCY_FIXTURE[0]]: ['mock-1'] });
+  await seedAndOpenMock(page, { stories: [story], profile });
+
+  await expect(page.getByText('1 / 1')).toBeVisible();
+  // Revealed panel hidden until Space is pressed.
+  await expect(page.getByTestId('full-star')).not.toBeVisible();
+
+  // → before reveal must not advance and must not reveal.
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByText('1 / 1')).toBeVisible();
+  await expect(page.getByTestId('full-star')).not.toBeVisible();
+});
+
+test('nav: Mock interview → after reveal advances linearly', async ({ page }) => {
+  const a = makeStory({ id: 'mock-a', title: 'A Story' });
+  const b = makeStory({ id: 'mock-b', title: 'B Story' });
+  const profile = makeProfile({
+    [COMPETENCY_FIXTURE[0]]: ['mock-a'],
+    [COMPETENCY_FIXTURE[1]]: ['mock-b'],
+  });
+  await seedAndOpenMock(page, { stories: [a, b], profile });
+
+  await expect(page.getByText('1 / 2')).toBeVisible();
+  await expect(page.getByText(`Behavioural · ${COMPETENCY_FIXTURE[0]}`)).toBeVisible();
+
+  // Reveal, then advance.
+  await page.keyboard.press(' ');
+  await expect(page.getByTestId('full-star')).toBeVisible();
+
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByText('2 / 2')).toBeVisible();
+  // Linear traversal crossed into comp B.
+  await expect(page.getByText(`Behavioural · ${COMPETENCY_FIXTURE[1]}`)).toBeVisible();
 });
 
 // ─── Drill: rating persistence ────────────────────────────────────────────────
