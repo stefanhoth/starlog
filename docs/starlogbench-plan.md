@@ -257,9 +257,13 @@ of `printTable()` (`eval.ts:198-226`), so a run says something useful without op
   missing. `bench/.env` optional and gitignored.
 - **No real user data.** All fixtures are synthetic; the bench never reads IndexedDB. The
   `security-advisor` agent should review the key handling and `.gitignore` before the PR.
-- **CI**: new workflow `.github/workflows/bench.yml` with `workflow_dispatch` + a monthly
-  cron, modelled on `check-gemini-models.yml` (Node from `.nvmrc`, key from secrets).
-  **Not** on every PR — the run costs money. Artifact: `report.pdf`.
+- **CI**: new workflow `.github/workflows/bench.yml`, `workflow_dispatch` only — no cron,
+  no PR trigger. The run costs money and produces a report for a human to read, not a
+  gate; nothing should fire it automatically. Modelled on `check-gemini-models.yml` for
+  the Node/secrets plumbing (Node from `.nvmrc`, key from secrets) but without its
+  schedule trigger. Upload `report.pdf` (and `results.json`) via
+  `actions/upload-artifact` so every manual run leaves the report attached to the run,
+  retrievable without re-running the bench.
 - Reference `bench/` from `tsconfig.node.json` or type-check it via its own `tsconfig.json`;
   `npm run check` currently covers neither `tests/` nor `scripts/`.
 - No changelog entry (`src/lib/changelog.ts`): developer tooling, not a user-facing change.
