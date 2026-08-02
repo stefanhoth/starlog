@@ -57,8 +57,8 @@ STARlogBench should answer four questions:
 | Decision | Choice | Rationale |
 |---|---|---|
 | Agent framework | **Mastra** | Neutrality requires judges from more than one provider family. Mastra is model-agnostic (via the Vercel AI SDK), has agents + workflows + a scorer concept, and runs standalone in a terminal. The Claude Agent SDK is mentally closer to `.claude/agents/` but is Claude-only — a pure Claude panel judging Gemini output is precisely the bias we are trying to measure. Fallback if Mastra's footprint proves too heavy: a plain AI SDK pipeline (stages 1–3 are deterministic anyway; only the arbiter is genuinely agentic). |
-| Model matrix | **3 Gemini variants (native) + a broad "is it worth it" roster (OpenRouter)** | The Gemini leg answers the product question (the Settings dropdown). The OpenRouter leg answers the build/buy-in question: current Chinese models (DeepSeek, Kimi/Moonshot, Qwen, …), Mistral, Gemma, plus a couple of Western frontier references — all config-driven, so adding a candidate is one line in `bench/src/config.ts`, not a new SDK integration. |
-| Non-Gemini model access | **OpenRouter** (`@openrouter/ai-sdk-provider`) | One API key, one bill, one AI-SDK-compatible interface for dozens of providers — which is exactly what Mastra's model layer already expects, so this is a config change, not new plumbing. The alternative — a native SDK per provider (`@mistralai/mistralai`, DeepSeek's OpenAI-compatible client, …) — would multiply keys, rate-limit surfaces, and error-shape handling for a benchmark that only needs to *sample* these models, not integrate them. Gemini keeps its own native path (see Phase 2) because production fidelity requires it. |
+| Model matrix | **3 Gemini variants (the Settings dropdown) + a broad "is it worth it" roster** | The Gemini variants answer the product question. The rest answers the build/buy-in question: current Chinese models (DeepSeek, Kimi/Moonshot, Qwen, …), Mistral, Gemma, plus a couple of Western frontier references — all config-driven, so adding a candidate is one line in `bench/src/config.ts`, not a new SDK integration. |
+| Model access | **OpenRouter for everything, including Gemini** (`@openrouter/ai-sdk-provider`) | One API key, one bill, one AI-SDK-compatible interface, one request/response shape, one retry and rate-limit surface — for every candidate in the matrix, Gemini included. Simplicity and uniform preconditions were chosen deliberately over per-provider native SDKs: a benchmark that calls each model through a different client (native Google SDK, Mistral's SDK, DeepSeek's OpenAI-compatible client, …) risks measuring integration differences as much as model differences. Routing Gemini through OpenRouter too removes that variable entirely — every row in the results table was produced by the same code path. **Trade-off, stated plainly:** the Gemini leg is no longer a byte-exact replay of `getModel()` in `gemini.ts` — it's OpenRouter's translation of the same prompt, `temperature: 0.2`, and JSON-mode request onto the same underlying Gemini model, not literally the `@google/generative-ai` SDK call the app makes. Close, not identical. See Phase 2 for what that means for the "which Gemini should be default" answer. |
 | Scope | **STAR extraction + competency extraction** | STAR is the core loop and the only call where hallucination does real damage — the deep rubric goes there. Competency extraction yields cheap hard metrics (vocabulary hit rate against the 12 `COMPETENCIES`). `generateInspirationQuestions` is v2. |
 | Location | **its own `bench/` package** | Own `package.json` + lockfile, not part of the root `npm ci`. Keeps the agent framework, chart and PDF dependencies out of the web app's dependency tree — and therefore out of `npm audit --audit-level=high` in CI. |
 | PDF | **HTML → Playwright `page.pdf()`** | Playwright is already a root devDependency and Chromium lives at `/opt/pw-browsers` in cloud sessions. Charts as hand-written inline SVG — prints cleanly, no native canvas dependencies. The HTML is a useful artifact in its own right. |
@@ -90,13 +90,13 @@ STARlogBench should answer four questions:
 
 ```
 bench/
-├── package.json          # own package: mastra, ai, @ai-sdk/google, @openrouter/ai-sdk-provider, zod, playwright
+├── package.json          # own package: mastra, ai, @openrouter/ai-sdk-provider, zod, playwright
 ├── tsconfig.json         # strict, ESM, NodeNext
-├── .env.example          # GEMINI_API_KEY, OPENROUTER_API_KEY
+├── .env.example          # OPENROUTER_API_KEY (the only key the bench needs)
 ├── README.md
 ├── src/
 │   ├── cli.ts            # flags: --models --cases --repeats --judges --extended --dry-run --skip-generate
-│   ├── config.ts         # model matrix (id, provider, family, tier), judge panel, rubric weights, price per 1M tokens
+│   ├── config.ts         # model matrix (OpenRouter slug, family, tier), judge panel, rubric weights
 │   ├── types.ts
 │   ├── generate.ts       # stage 1
 │   ├── checks.ts         # stage 2
@@ -124,29 +124,32 @@ For every `(model × fixture × repeat n)` combination, produce a candidate and 
 to disk raw (`runs/<ts>/raw/<model>__<case>__<n>.json`) — including the raw string before
 parsing, token usage, and wall-clock latency.
 
-**Two access paths, one prompt contract.** Every candidate — regardless of provider —
-receives the exact same `STAR_PROMPT` / `COMPETENCY_PROMPT` from `src/lib/prompts.ts`
-(Phase 0) and the same transcript concatenation. Only *how* the model is called differs:
+**One access path, one prompt contract.** Every candidate — Gemini included — goes
+through the same `@openrouter/ai-sdk-provider` model instance in `generate.ts`, receives
+the exact same `STAR_PROMPT` / `COMPETENCY_PROMPT` from `src/lib/prompts.ts` (Phase 0)
+and the same transcript concatenation, and is called with the same `temperature: 0.2`
+and JSON-mode request (`response_format: { type: 'json_object' }` where the underlying
+model supports it — flagged per-model in `config.ts`; a model that doesn't is a hard-check
+failure to report, not something to silently work around). No `responseSchema` by
+default, matching what STARlog actually ships today. One retry/backoff implementation,
+one error shape, one rate-limit surface, for every row in the results table — that
+uniformity is the point: the benchmark should measure model differences, not client
+differences.
 
-- **Gemini models — native `@google/generative-ai`.** Mirrors `getModel()` in
-  `gemini.ts:39-44` exactly: `responseMimeType: 'application/json'`, `temperature: 0.2`,
-  **no** `responseSchema` (STARlog does not use one today), prompt concatenation exactly
-  as in `gemini.ts:119`. This is the leg that answers "which Gemini should be default" —
-  it has to measure the real production path, not a flattering approximation.
-- **Every other candidate — OpenRouter** (`@openrouter/ai-sdk-provider`, an AI SDK
-  model provider, so it plugs into Mastra the same way the Gemini AI-SDK provider does).
-  Same prompt text, same `temperature: 0.2`, JSON mode via OpenRouter's
-  `response_format: { type: 'json_object' }` where the underlying model supports it
-  (flagged per-model in `config.ts` — some open models don't, and that gap is itself
-  worth reporting as a hard-check failure, not silently worked around). This leg is
-  **evaluation only**: it answers "is this worth integrating", not "does it match
-  production", because there is no production Gemini-parity call to match.
-- **Text-only for the OpenRouter leg.** STARlog's audio→STAR path (`Blob` input,
-  `gemini.ts:100-117`) is Gemini-specific multimodal handling that doesn't translate
-  across providers via a unified chat API. Since the existing STAR fixtures
-  (`tests/prompts/fixtures/star-inputs.json`) are already text transcripts, this is not a
-  new gap — every fixture in this plan runs through the transcript path for every model.
-
+- **What this costs on the Gemini leg.** OpenRouter's Gemini endpoint proxies to the same
+  underlying model, but it is not the `@google/generative-ai` SDK call `gemini.ts:39-44`
+  makes — it's an OpenAI-compatible chat-completions translation of an equivalent
+  request. So "which Gemini should be default" is answered under near-identical
+  conditions to production, not a byte-exact replay of it. Worth restating if the report
+  ever surprises someone: a gap between the bench's Gemini ranking and something observed
+  in the app is more likely to be this translation layer than a real quality difference —
+  and if that gap shows up, it's itself informative (it would mean OpenRouter isn't a safe
+  substrate for *this* call, which matters for the Phase 2 conclusion below too).
+- **Text-only.** STARlog's audio→STAR path (`Blob` input, `gemini.ts:100-117`) is
+  Gemini-native multimodal handling that has no equivalent through a unified chat API.
+  Since the existing STAR fixtures (`tests/prompts/fixtures/star-inputs.json`) are already
+  text transcripts, this is not a new gap — every fixture in this plan runs through the
+  transcript path for every model, Gemini included.
 - **Optional second arm `--structured`.** The same run with Zod-constrained output where
   the provider supports it. The delta quantifies what schema-constrained decoding would
   buy STARlog — the change `docs/ai-use-cases.md` already names as the highest-value open
@@ -154,15 +157,16 @@ receives the exact same `STAR_PROMPT` / `COMPETENCY_PROMPT` from `src/lib/prompt
   decision, not a curiosity.
 
 `--repeats n` (default 3) measures non-determinism. Serial execution per model with a
-small delay — reuse the rate-limit pacing from `eval.ts`; retry with backoff analogous to
-`withRetry` (`gemini.ts:12-33`), but retries are **counted and reported**, not hidden:
-retry rate is itself a quality metric.
+small delay and retry with backoff — analogous in spirit to `withRetry` in
+`gemini.ts:12-33`, but implemented once against OpenRouter's error shape instead of
+per-provider. Retries are **counted and reported**, not hidden: retry rate is itself a
+quality metric.
 
-**Cost tiering for the broad roster.** `config.ts` tags every non-Gemini candidate
-`core` or `extended`. `core` is a small, cheap set (one Chinese model, one Mistral, one
-Gemma, at whatever size makes them realistic STARlog alternatives) that runs by default
-alongside the Gemini leg. `extended` — bigger/pricier variants per family (e.g. a
-reasoning-tier DeepSeek, a larger Kimi) — only runs with `--extended`, so the default
+**Cost tiering for the broad roster.** `config.ts` tags every candidate `core` or
+`extended`. `core` is the 3 Gemini variants plus a small, cheap non-Gemini set (one
+Chinese model, one Mistral, one Gemma, at whatever size makes them realistic STARlog
+alternatives) that runs by default. `extended` — bigger/pricier variants per family (e.g.
+a reasoning-tier DeepSeek, a larger Kimi) — only runs with `--extended`, so the default
 `npm run bench` stays cheap and a full cross-provider sweep is opt-in, not accidental.
 
 **Fixtures.** Reuse the existing five from `tests/prompts/fixtures/star-inputs.json`
@@ -260,9 +264,9 @@ not a bonus:
 
 `aggregate.ts` produces `results.json` (machine-readable, diffable between runs):
 Bradley–Terry ranking with confidence intervals, median rubric scores, hallucination
-rate, hard-check pass rate, latency p50/p95, cost per 100 stories (OpenRouter's reported
-per-generation cost for that leg, token usage × the `config.ts` price table for native
-Gemini calls — see Phase 6), variance across repeats, judge agreement, tripwire hit rate.
+rate, hard-check pass rate, latency p50/p95, cost per 100 stories (read straight from
+OpenRouter's per-generation cost metadata for every candidate — no price table to
+maintain, see Phase 6), variance across repeats, judge agreement, tripwire hit rate.
 
 **Load the `dataviz` skill before writing `report/charts.ts`** — required by the skill
 trigger, before the first line of chart code. Planned charts:
@@ -290,22 +294,22 @@ of `printTable()` (`eval.ts:198-226`), so a run says something useful without op
   for confirmation. **`--skip-generate`** re-judges cached raw output without
   regenerating — judge iteration then costs almost nothing.
 - **Keys** from `process.env` (repo convention, see `eval.ts:20` and
-  `scripts/check-gemini-models.mjs:19`): `GEMINI_API_KEY` for the native Gemini leg,
-  `OPENROUTER_API_KEY` for every other candidate and judge. Hard exit with an
-  instructional message when a key required by the requested `--models`/`--judges` is
-  missing. `bench/.env` optional and gitignored.
-- **Pricing.** OpenRouter reports per-generation cost in its response metadata, so
-  `aggregate.ts` can read actual spend directly instead of maintaining a hand-written
-  price table for a roster that changes often; the static price table in `config.ts`
-  stays only for the native Gemini leg, where OpenRouter has no visibility.
+  `scripts/check-gemini-models.mjs:19`): a single `OPENROUTER_API_KEY` covers every
+  candidate and every judge, generation and grading alike — there is no second key to
+  provision. Hard exit with an instructional message when it's missing. `bench/.env`
+  optional and gitignored.
+- **Pricing.** OpenRouter reports per-generation cost in its response metadata for every
+  candidate, Gemini included, so `aggregate.ts` reads actual spend directly. No
+  hand-written price table anywhere in `config.ts` — one less thing to keep in sync with
+  a roster that changes often.
 - **No real user data.** All fixtures are synthetic; the bench never reads IndexedDB. The
   `security-advisor` agent should review the key handling and `.gitignore` before the PR.
 - **CI**: new workflow `.github/workflows/bench.yml`, `workflow_dispatch` only — no cron,
   no PR trigger. The run costs money and produces a report for a human to read, not a
   gate; nothing should fire it automatically. Modelled on `check-gemini-models.yml` for
-  the Node/secrets plumbing (Node from `.nvmrc`, keys from secrets — both
-  `GEMINI_API_KEY` and `OPENROUTER_API_KEY`, plus a `workflow_dispatch` input for
-  `--extended` so the expensive roster stays an explicit choice per run) but without its
+  the Node/secrets plumbing (Node from `.nvmrc`, a single `OPENROUTER_API_KEY` secret,
+  plus a `workflow_dispatch` input for `--extended` so the expensive roster stays an
+  explicit choice per run) but without its
   schedule trigger. Upload `report.pdf` (and `results.json`) via
   `actions/upload-artifact` so every manual run leaves the report attached to the run,
   retrievable without re-running the bench.
@@ -330,7 +334,7 @@ prompt strings must remain byte-identical, or the refactor has changed app behav
 ```bash
 cd bench && npm install
 npm run bench -- --dry-run                                    # cost estimate, no API calls
-npm run bench -- --models gemini-2.5-flash --cases en-good-3-sentence --repeats 1 --judges 1
+npm run bench -- --models google/gemini-2.5-flash --cases en-good-3-sentence --repeats 1 --judges 1
 npm run bench                                                 # full run
 ```
 
