@@ -1,10 +1,13 @@
-# STARlogBench — Implementation Plan
+# STARlogBench — Implementation Plan ("Plan A": bespoke Mastra harness)
 
 A benchmark harness that runs the same inputs through multiple models and has a
 neutral agent panel judge the results. Terminal-driven, independent of the web app,
 outputs a PDF report with charts.
 
-**Status:** plan only — nothing implemented yet.
+**Status:** plan only — nothing implemented yet. See also
+[`starlogbench-plan-ori-eval.md`](./starlogbench-plan-ori-eval.md) ("Plan B"), an
+alternative built on OpenRouter's Ori Eval instead of a custom agent framework — same
+goals, different engine. Both are under consideration; neither is committed to yet.
 
 ## Table of Contents
 
