@@ -1,0 +1,209 @@
+name: Preview Deploy
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: preview-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  # Build runs npm lifecycle scripts (untrusted third-party code), so it is
+  # isolated from the deploy job, which holds the Cloudflare secrets.
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  preview:
+    name: Deploy preview
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      PR_ALIAS: pr-${{ github.event.number }}
+    outputs:
+      preview-url: ${{ steps.meta.outputs.preview-url }}
+    steps:
+      # Checkout provides wrangler.jsonc only — no npm install runs in this job.
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Upload preview version
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: versions upload --preview-alias ${{ env.PR_ALIAS }}
+
+      - name: Extract preview URL
+        id: meta
+        env:
+          WRANGLER_OUTPUT: ${{ steps.deploy.outputs.command-output }}
+        run: |
+          # Parsed from wrangler's own output rather than hand-built from the
+          # account's workers.dev subdomain, so this doesn't need updating if
+          # the subdomain ever changes.
+          PREVIEW_URL=$(echo "$WRANGLER_OUTPUT" | grep -oE 'Version Preview Alias URL: https://\S+' | sed 's/^Version Preview Alias URL: //')
+          if [ -z "$PREVIEW_URL" ]; then
+            echo "Could not find a 'Version Preview Alias URL' line in wrangler's output" >&2
+            exit 1
+          fi
+          echo "preview-url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Register GitHub deployment
+        uses: actions/github-script@v9
+        env:
+          PREVIEW_URL: ${{ steps.meta.outputs.preview-url }}
+        with:
+          script: |
+            const previewUrl = process.env.PREVIEW_URL;
+            const headSha = context.payload.pull_request.head.sha;
+
+            const { data: deployment } = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: headSha,
+              environment: "preview",
+              auto_merge: false,
+              required_contexts: [],
+              transient_environment: true,
+              production_environment: false,
+              description: `Preview for PR #${context.issue.number}`,
+            });
+
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.id,
+              state: "success",
+              environment: "preview",
+              environment_url: previewUrl,
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: "Deployed to Cloudflare Workers",
+            });
+
+  e2e:
+    name: E2E against preview
+    needs: preview
+    runs-on: ubuntu-latest
+    # No secrets needed here — keep the job on read-only permissions since
+    # npm ci runs third-party lifecycle scripts.
+    permissions:
+      contents: read
+    env:
+      E2E_BASE_URL: ${{ needs.preview.outputs.preview-url }}
+    container:
+      # Image tag must match @playwright/test version in package.json
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
+      options: --ipc=host
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for preview to be reachable
+        # A brand-new PR alias needs a fresh workers.dev subdomain, which can
+        # take a moment to provision after the version upload.
+        run: |
+          for i in $(seq 1 18); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" "$E2E_BASE_URL/") || status=000
+            if [ "$status" = "200" ]; then
+              echo "Preview reachable after $i attempt(s)"
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $status - retrying in 5s"
+            sleep 5
+          done
+          echo "Preview at $E2E_BASE_URL never became reachable" >&2
+          exit 1
+
+      - name: Run Playwright tests
+        run: npx playwright test --reporter=list,json
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: playwright-report/results.json
+
+      - name: Write test summary
+        if: always()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require("fs");
+            const reportPath = "playwright-report/results.json";
+
+            if (!fs.existsSync(reportPath)) {
+              await core.summary
+                .addHeading("E2E against preview")
+                .addRaw("No results.json found — the suite likely crashed before any test ran.")
+                .write();
+              return;
+            }
+
+            const { stats = {} } = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+            const { expected = 0, unexpected = 0, flaky = 0, skipped = 0, duration = 0 } = stats;
+            const ok = unexpected === 0;
+
+            await core.summary
+              .addHeading(`E2E against preview ${ok ? "✅" : "❌"}`)
+              .addRaw(`Tested against ${process.env.E2E_BASE_URL}`)
+              .addTable([
+                [
+                  { data: "Passed", header: true },
+                  { data: "Failed", header: true },
+                  { data: "Flaky", header: true },
+                  { data: "Skipped", header: true },
+                  { data: "Duration", header: true },
+                ],
+                [
+                  String(expected),
+                  String(unexpected),
+                  String(flaky),
+                  String(skipped),
+                  `${(duration / 1000).toFixed(1)}s`,
+                ],
+              ])
+              .write();
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
