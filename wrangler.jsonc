@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "starlog",
+  "compatibility_date": "2026-08-20",
+  "assets": {
+    "directory": "./dist"
+  },
+  "routes": [
+    { "pattern": "starlog.stefanhoth.com", "custom_domain": true }
+  ]
+}

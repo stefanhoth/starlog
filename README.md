@@ -52,7 +52,7 @@ Open [http://localhost:5173](http://localhost:5173), enter your Gemini API key, 
 | Build | Vite 6 | Near-instant HMR in development; fast production builds |
 | AI | Gemini 2.5 Flash (`@google/generative-ai`) | Multimodal (audio + text in one call); generous free tier |
 | Storage | IndexedDB (`idb`) for stories, profiles, and settings; one-time migration from `localStorage` on first access; `sessionStorage` for transient UI state | No backend needed; data never leaves the device |
-| Routing | Hash-based (`#/`) via History API | Deep links and back/forward work on GitHub Pages without server config |
+| Routing | Hash-based (`#/`) via History API | Deep links and back/forward work on static hosting without server config |
 | Tests | Playwright (Chromium) | Real browser, real MediaRecorder, Gemini mocked via `page.route` |
 
 ### Data model (simplified)
@@ -122,7 +122,7 @@ GitHub Actions runs on every push and PR to `main`:
 |---|---|---|
 | **Quality** | push + PR | `npm run check` → `npm run build` → `npm audit` |
 | **E2E** | PR only | Playwright tests in pre-baked Chromium container |
-| **Deploy** | push to main | Build → publish to [GitHub Pages](https://stefanhoth.github.io/starlog/) → CalVer release tag |
+| **Deploy** | push to main | Build → publish to [Cloudflare Workers](https://starlog.stefanhoth.com) → CalVer release tag |
 
 Every successful deploy creates a `YYYY.MM.DD` release tag (e.g. `2026.05.20`). Multiple deploys on the same day get a numeric suffix (`.1`, `.2`, …). See [CHANGELOG.md](CHANGELOG.md) for a human-maintained history of notable changes.
 
