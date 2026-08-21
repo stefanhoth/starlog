@@ -2,10 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "starlog",
   "compatibility_date": "2026-08-20",
+  // Custom Domains imply workers_dev=false; preview_urls follows workers_dev
+  // by default, so it must stay explicit or PR previews (preview-deploy.yml)
+  // stop working on the next production deploy.
+  "preview_urls": true,
+  "routes": [{ "pattern": "starlog.stefanhoth.com", "custom_domain": true }],
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
   },
-  "routes": [
-    { "pattern": "starlog.stefanhoth.com", "custom_domain": true }
-  ]
 }

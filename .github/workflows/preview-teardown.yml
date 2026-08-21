@@ -1,0 +1,117 @@
+name: Preview Teardown
+
+# Runs when a PR against main is closed (merged or closed without merging).
+# Mirrors preview-deploy.yml's trigger surface so every previewed PR gets torn down.
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+concurrency:
+  group: preview-teardown-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# No top-level permissions: each job declares only what it needs.
+permissions: {}
+
+jobs:
+  # Marks the PR's GitHub "preview" deployment(s) inactive and deletes them so the
+  # Environments/Deployments list doesn't accumulate stale entries. This is the
+  # reliable half of teardown — see the cloudflare-preview job below for why the
+  # Cloudflare-side alias is intentionally left alone.
+  deactivate-github-deployment:
+    name: Deactivate GitHub preview deployment
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+    steps:
+      - name: Mark preview deployment(s) inactive and delete
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            const expectedDescription = `Preview for PR #${prNumber}`;
+
+            // Deployments don't carry a PR number field, so match on the exact
+            // description string preview-deploy.yml sets when it creates them.
+            const deployments = await github.paginate(github.rest.repos.listDeployments, {
+              owner,
+              repo,
+              environment: "preview",
+              per_page: 100,
+            });
+
+            const prDeployments = deployments.filter(
+              (deployment) => deployment.description === expectedDescription,
+            );
+
+            if (prDeployments.length === 0) {
+              core.info(`No "preview" deployments found for PR #${prNumber} (nothing to do).`);
+              return;
+            }
+
+            for (const deployment of prDeployments) {
+              core.info(`Deactivating deployment ${deployment.id} for PR #${prNumber}`);
+
+              // Best-effort: don't abort the loop if a particular deployment's
+              // status can't be updated (e.g. transient API error), since that
+              // would leave the PR's remaining deployments uncleaned too.
+              try {
+                await github.rest.repos.createDeploymentStatus({
+                  owner,
+                  repo,
+                  deployment_id: deployment.id,
+                  state: "inactive",
+                  environment: "preview",
+                });
+              } catch (error) {
+                core.warning(
+                  `Could not deactivate deployment ${deployment.id}: ${error.message}`,
+                );
+              }
+
+              // Deleting requires every status to be inactive first, which the
+              // call above just attempted. Best-effort: don't fail the job if a
+              // particular deployment can't be deleted (e.g. already gone).
+              try {
+                await github.rest.repos.deleteDeployment({
+                  owner,
+                  repo,
+                  deployment_id: deployment.id,
+                });
+                core.info(`Deleted deployment ${deployment.id}`);
+              } catch (error) {
+                core.warning(`Could not delete deployment ${deployment.id}: ${error.message}`);
+              }
+            }
+
+  # Cloudflare cleanup: intentionally NOT implemented as an active teardown step.
+  #
+  # preview-deploy.yml creates the pr-<N> alias via
+  # `wrangler versions upload --preview-alias pr-<N>`, which targets Cloudflare's
+  # classic per-script Workers API (`/accounts/{account}/workers/scripts/{name}/versions`).
+  #
+  #   - The Wrangler CLI has no `versions delete` (or similar) subcommand —
+  #     `wrangler versions --help` only lists view/list/upload/deploy/secret.
+  #   - The classic scripts Versions API exposes GET (list/detail) and POST (upload)
+  #     only; there is no DELETE endpoint for a version.
+  #   - Cloudflare's docs (developers.cloudflare.com/workers/versions-and-deployments/preview-urls/)
+  #     state aliases "may only be created during version upload" and describe no
+  #     removal mechanism: "Only the 1000 most recently deployed aliases are
+  #     retained. When a new alias is created beyond this limit, the least recently
+  #     deployed alias is deleted." I.e. aliases age out via LRU eviction, they are
+  #     not explicitly deletable.
+  #   - A newer *beta* endpoint,
+  #     `DELETE /accounts/{account}/workers/workers/{worker_id}/versions/{version_id}`,
+  #     does support deleting a version — but it belongs to a separate, still-beta
+  #     "Workers" resource model (the /workers/workers/... beta API) that
+  #     `wrangler versions upload` does not target. Using it would require migrating
+  #     this Worker to that beta resource model, which is out of scope for this
+  #     infra-only teardown workflow.
+  #
+  # Conclusion: leave the pr-<N> preview alias to age out naturally rather than
+  # hacking around the lack of a supported deletion path. If Cloudflare ships a
+  # supported way to delete an aliased preview (stable API or wrangler subcommand),
+  # add a job here that holds CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID and runs no
+  # npm install, mirroring the `preview` job in preview-deploy.yml.
