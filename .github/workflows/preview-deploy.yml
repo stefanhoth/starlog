@@ -71,6 +71,13 @@ jobs:
           # Parsed from wrangler's own output rather than hand-built from the
           # account's workers.dev subdomain, so this doesn't need updating if
           # the subdomain ever changes.
+          #
+          # Note: this line only appears once Cloudflare's `previews_enabled`
+          # flag is set for this Worker, which `versions upload` alone does not
+          # do — it's synced by the *next* production `wrangler deploy` after
+          # `preview_urls: true` lands in wrangler.jsonc (see the triggers-publish
+          # step in cloudflare/workers-sdk). In other words: the PR that first
+          # turns preview_urls on cannot get a working preview of itself.
           PREVIEW_URL=$(echo "$WRANGLER_OUTPUT" | grep -oE 'Version Preview Alias URL: https://\S+' | sed 's/^Version Preview Alias URL: //')
           if [ -z "$PREVIEW_URL" ]; then
             echo "Could not find a 'Version Preview Alias URL' line in wrangler's output" >&2
