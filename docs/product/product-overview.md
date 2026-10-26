@@ -91,7 +91,7 @@ A user tells STARlog about things that happened in their career — by speaking,
 | Feature | Description | Status |
 |---|---|---|
 | Launch pad | Mode picker + competency summary; entry from Job Hub or Story Bank. | Shipped |
-| Flash cards (`read`) | Keyboard-navigable deck: ←→ stories, ↑↓ competency groups, space to expand full STAR. | Shipped |
+| Flash cards (`read`) | Keyboard-navigable deck: ←→ navigate linearly through all stories (crossing competency boundaries), space to expand full STAR. | Shipped |
 | Mock interview (`train-question`) | Question-first ("Tell me about a time you demonstrated X"), think-timer, space to reveal. | Shipped |
 | Drill with timer (`train-timer`) | 90s target bar with over-time indicator, 1–5 self-rating. | Shipped |
 
