@@ -82,23 +82,26 @@
   }
   function nextStory() {
     if (!currentGroup) return;
-    const atEnd = storyIdx >= currentGroup.stories.length - 1;
-    storyIdx = atEnd ? 0 : storyIdx + 1;
+    if (storyIdx < currentGroup.stories.length - 1) {
+      storyIdx++;
+    } else if (groupIdx < groups.length - 1) {
+      groupIdx++;
+      storyIdx = 0;
+    } else {
+      flashLoop(); // at end of deck
+    }
     expanded = false;
-    if (atEnd) flashLoop();
   }
   function prevStory() {
-    if (!currentGroup) return;
-    const atStart = storyIdx === 0;
-    storyIdx = atStart ? currentGroup.stories.length - 1 : storyIdx - 1;
+    if (storyIdx > 0) {
+      storyIdx--;
+    } else if (groupIdx > 0) {
+      groupIdx--;
+      storyIdx = (groups[groupIdx]?.stories.length ?? 1) - 1;
+    } else {
+      flashLoop(); // at start of deck
+    }
     expanded = false;
-    if (atStart) flashLoop();
-  }
-  function nextGroup() {
-    if (groupIdx < groups.length - 1) { groupIdx++; storyIdx = 0; expanded = false; }
-  }
-  function prevGroup() {
-    if (groupIdx > 0) { groupIdx--; storyIdx = 0; expanded = false; }
   }
 
   // Global story position (across all groups)
@@ -187,8 +190,6 @@
         case 'Escape':     exit();      break;
         case 'ArrowRight': nextStory(); break;
         case 'ArrowLeft':  prevStory(); break;
-        case 'ArrowDown':  nextGroup(); break;
-        case 'ArrowUp':    prevGroup(); break;
         case ' ':          e.preventDefault(); expanded = !expanded; break;
       }
     } else if (submode === 'train-question') {
@@ -379,7 +380,7 @@
       <!-- Nav row -->
       <div class="flex items-center justify-between mt-6 text-sm text-neutral-content/40">
         <button onclick={prevStory} data-testid="prev-story-btn">← prev</button>
-        <span class="text-xs">← → navigate · space expand · esc exit</span>
+        <span class="text-xs">← → navigate stories · space expand · esc exit</span>
         <button onclick={nextStory} data-testid="next-story-btn">next →</button>
       </div>
     {/if}

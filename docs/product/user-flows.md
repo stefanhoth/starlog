@@ -72,11 +72,9 @@ Entry: Job Hub "Start interview prep →" (mode `profile`), Story Bank "Review" 
 
 1. **Launch pad:** header + mode cards + competency summary.
    - **Branch — no mapped stories:** "No stories mapped yet." with a Go to Job Hub button.
-2. **Flash cards (`read`):** card shows title + 2-line action crib; space/click expands full STAR. Keyboard: ←→ stories (wraps with a flash), ↑↓ competency groups, Esc exits. Position shown as `current / total`.
-3. **Mock interview (`train-question`):** shows "Tell me about a time you demonstrated {competency}." with a running think-timer. Space reveals the story (stops timer); → next question. Esc exits.
-4. **Drill with timer (`train-timer`):** 90s target progress bar (warning segment when over), play/pause, full STAR card, 1–5 self-rating (keys 1–5).
-   - **Known gap:** rating is not saved back to the story's `rank`.
-   - Space toggles timer, → next, Esc exits.
+2. **Flash cards (`read`):** card shows title + 2-line action crib; space/click expands full STAR. Keyboard: ←→ navigate linearly through all stories (competency boundaries crossed automatically; flash at deck ends), Esc exits. Position shown as `current / total`.
+3. **Mock interview (`train-question`):** shows "Tell me about a time you demonstrated {competency}." with a running think-timer. Space reveals the story (stops timer); → advances linearly to next story. Esc exits.
+4. **Drill with timer (`train-timer`):** 90s target progress bar (warning segment when over), play/pause, full STAR card, 1–5 self-rating (keys 1–5). Rating is saved to the story's `rank`. Space toggles timer, → next (linear), Esc exits.
 5. Exit returns to Job Hub (profile) or Story Bank (library).
 
 ## 7. Returning user: settings update (`Settings.svelte`)
