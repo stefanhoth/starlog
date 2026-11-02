@@ -31,7 +31,7 @@ Constraints that shape future work. Grounded in current code.
 ## Navigation
 
 - **Hash-based router with History API** (`view.ts`) — the app uses a real URL router. `currentView` is a `writable<View>` enum; `navigate()`, `openJob()`, `openStory()` push/replace `#/...` hashes and set the store. `parseHash`/`viewToHash` map between URL and view; `popstate` syncs back/forward.
-  - *Why:* deep links and back/forward work on GitHub Pages without server config.
+  - *Why:* deep links and back/forward work on static hosting (Cloudflare Workers) without server-side routing config.
   - *Constraint:* `review` and `interview` use `replaceState` (transient, kept out of the back stack). The `View` enum includes legacy entries (`library`, `job-profiles`, `job-profile-detail`) kept for test/back-compat; `App.svelte` renders the modern equivalent for them. New views must be added to the enum, both mapping functions, and `App.svelte`'s render switch.
 - **Profile/story identity flows through both URL and sessionStorage.** `applyRoute` mirrors `profileId`/`storyId` into sessionStorage; views read sessionStorage for active IDs. *Constraint:* keep these two in sync when adding ID-bearing views.
 
@@ -46,8 +46,8 @@ Constraints that shape future work. Grounded in current code.
 
 ## PWA / offline
 
-- **`vite-plugin-pwa` with `registerType: 'autoUpdate'`** (`vite.config.ts`). Manifest: standalone display, theme `#4f46e5`, 192/512 icons (+ maskable), scope/start `/starlog/`. Workbox precaches `js,css,html,svg,png,ico,woff2`.
-- **Base path differs by command:** `/starlog/` on build (GitHub Pages), `/` in dev. *Constraint:* asset paths and the GitHub release link (`__APP_VERSION__`, injected via `define`) assume this base.
+- **`vite-plugin-pwa` with `registerType: 'autoUpdate'`** (`vite.config.ts`). Manifest: standalone display, theme `#4f46e5`, 192/512 icons (+ maskable), scope/start `/`. Workbox precaches `js,css,html,svg,png,ico,woff2`.
+- **Base path is `/` for both build and dev.** The app is served from the domain root (`starlog.stefanhoth.com`) on Cloudflare Workers; there is no GitHub Pages subpath to account for anymore.
 - **Offline scope:** shell + existing data fully usable offline; anything requiring Gemini (capture→structure, competency extraction, AI questions) needs network. *Constraint:* don't make core read/edit/map/rehearse paths depend on the network.
 
 ## UI system

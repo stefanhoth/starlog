@@ -23,10 +23,12 @@ Use the right script for your environment:
 
 | Environment | Command | Notes |
 |-------------|---------|-------|
-| Local (Docker required) | `npm run test:e2e` | Runs inside `mcr.microsoft.com/playwright:v1.60.0-noble` — mirrors CI exactly |
+| Local (Docker required) | `npm run test:e2e` | Runs inside `mcr.microsoft.com/playwright:v1.60.0-noble` against a local dev server — same container image as CI, but CI runs against a deployed Cloudflare preview, not `npm run dev` |
 | Claude Code cloud session | `npm run test:e2e:cloud` | Installs Chromium into `/opt/pw-browsers` and runs tests directly — no Docker needed |
 
 Cloud sessions are ephemeral so `test:e2e:cloud` self-installs the correct browser on every run.
+
+CI itself doesn't run E2E against a local server at all: every PR gets its own Cloudflare Workers preview deploy (`preview-deploy.yml`), and the Playwright suite runs against that live URL. See the CI/CD section in [README.md](README.md) for the full pipeline.
 
 ## Specialist Agents
 

@@ -95,6 +95,28 @@
     dismissBackupReminder();
   }
 
+  // STARlog is moving from stefanhoth.github.io to starlog.stefanhoth.com.
+  // IndexedDB is origin-scoped, so data on this origin won't follow — nudge
+  // visitors here to export a backup before switching over.
+  const OLD_ORIGIN_HOST = 'stefanhoth.github.io';
+
+  let migrationBannerDismissed = $state(
+    typeof localStorage !== 'undefined'
+      ? localStorage.getItem('starlog_migration_banner_dismissed') !== null
+      : true
+  );
+
+  const showMigrationBanner = $derived(
+    !migrationBannerDismissed &&
+    typeof window !== 'undefined' &&
+    window.location.hostname === OLD_ORIGIN_HOST
+  );
+
+  function dismissMigrationBanner() {
+    localStorage.setItem('starlog_migration_banner_dismissed', '1');
+    migrationBannerDismissed = true;
+  }
+
   const hasUnseen = $derived($lastSeenDate !== CHANGELOG[0]?.date);
 
   // PWA install prompt
@@ -159,6 +181,17 @@
   </div>
 {/if}
 
+
+{#if showMigrationBanner}
+  <div role="alert" data-testid="migration-banner" class="fixed top-0 left-0 right-0 z-[49] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-warning text-warning-content px-4 py-3 text-sm shadow-lg">
+    <span>🚀 STARlog has moved to <strong>starlog.stefanhoth.com</strong> — this page won't be updated anymore. Download a backup of your stories, then continue on the new site (you'll need to re-enter your Gemini API key there).</span>
+    <div class="flex items-center gap-2 shrink-0 flex-wrap">
+      <button class="btn btn-xs btn-warning-content border border-warning-content/30 hover:bg-warning-content/10" onclick={exportData} data-testid="migration-banner-download">Download backup →</button>
+      <a class="btn btn-xs btn-primary" href="https://starlog.stefanhoth.com" data-testid="migration-banner-goto">Open new site</a>
+      <button class="btn btn-xs btn-ghost text-warning-content" onclick={dismissMigrationBanner} data-testid="migration-banner-dismiss" aria-label="Dismiss">✕</button>
+    </div>
+  </div>
+{/if}
 
 {#if showBackupReminder}
   <div role="alert" data-testid="backup-reminder-banner" class="fixed top-0 left-0 right-0 z-48 flex items-center justify-between gap-3 bg-info text-info-content px-4 py-3 text-sm shadow-lg">
