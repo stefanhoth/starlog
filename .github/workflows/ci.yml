@@ -32,65 +32,29 @@ jobs:
       - name: Security audit
         run: npm audit --audit-level=high
 
-  # ── E2E tests (Playwright / Chromium) ─────────────────────────────────────
-  e2e:
-    name: E2E tests
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    container:
-      # Image tag must match @playwright/test version in package.json
-      image: mcr.microsoft.com/playwright:v1.60.0-noble
-      options: --ipc=host
+  # E2E tests run against the live PR preview instead — see preview-deploy.yml.
 
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Cache npm dependencies
-        uses: actions/cache@v5
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: ${{ runner.os }}-node-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Playwright tests
-        run: npx playwright test
-
-      - name: Upload test report
-        uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 7
-
-  # ── Deploy to GitHub Pages ─────────────────────────────────────────────────
+  # ── Deploy to Cloudflare Workers ────────────────────────────────────────────
   deploy:
-    name: Deploy to GitHub Pages
+    name: Deploy to Cloudflare Workers
     runs-on: ubuntu-latest
     needs: [quality]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     concurrency:
-      group: pages
+      group: deploy
       cancel-in-progress: true
 
     permissions:
-      pages: write
-      id-token: write
       contents: write
 
     environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      name: production
+      url: https://starlog.stefanhoth.com
 
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - uses: actions/configure-pages@v5
 
       - uses: actions/setup-node@v6
         with:
@@ -116,12 +80,12 @@ jobs:
         env:
           APP_VERSION: ${{ env.CALVER_TAG }}
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v4
         with:
-          path: dist/
-
-      - uses: actions/deploy-pages@v5
-        id: deploy
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
 
       - name: Tag release (CalVer YYYY.MM.DD)
         env:
