@@ -53,7 +53,7 @@ For every ticket, follow this sequence exactly:
 4. `git fetch origin main && git rebase origin/main` — rebase *immediately before pushing* so the PR has no conflicts with main and CI tests it against current code. (Being behind main no longer blocks merging; the ruleset doesn't require up-to-date branches.)
 5. `git push -u origin <branch>` — push the rebased branch.
 6. `gh pr create` — open the PR.
-7. Ask Stefan: **"Manual review or auto-merge?"**
+7. `gh pr merge --auto --squash` — enable auto-merge; it merges once the required checks are green. Opt out with a draft PR or the label `hold` (e.g. when Stefan asked for a manual review).
 
 **Never stop after step 3 and ask "should I open a PR?"** — assume yes, always.
 
